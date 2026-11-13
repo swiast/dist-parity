@@ -8,6 +8,7 @@ from pathlib import Path, PurePosixPath
 import re
 import tarfile
 import zipfile
+import zlib
 
 MAX_METADATA_BYTES = 2_000_000
 SUPPORTED_METADATA_MAJOR = 2
@@ -119,7 +120,7 @@ def _sdist_metadata(path: Path) -> dict[str, list[str]]:
             if stream is None:
                 raise ArtifactError("sdist: PKG-INFO is unreadable")
             return _decode_metadata(stream.read(MAX_METADATA_BYTES + 1), meta_name)
-    except (OSError, tarfile.TarError) as exc:
+    except (OSError, tarfile.TarError, EOFError) as exc:
         raise ArtifactError(f"could not read sdist {path}: {exc}") from exc
 
 
@@ -150,9 +151,13 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
                     raise ArtifactError(f"wheel missing {base}/{required}")
             if archive.getinfo(meta[0]).file_size > MAX_METADATA_BYTES:
                 raise ArtifactError("wheel: METADATA exceeds metadata size limit")
-            data = archive.read(meta[0])
+            # Bound decompression even if the ZIP header has misleading sizes.
+            with archive.open(info) as stream:
+                data = stream.read(MAX_METADATA_BYTES + 1)
+            if len(data) > MAX_METADATA_BYTES:
+                raise ArtifactError("wheel: METADATA exceeds metadata size limit")
             return _decode_metadata(data, meta[0])
-    except (OSError, zipfile.BadZipFile, RuntimeError, EOFError) as exc:
+    except (OSError, zipfile.BadZipFile, RuntimeError, EOFError, zlib.error) as exc:
         raise ArtifactError(f"could not read wheel {path}: {exc}") from exc
 
 
