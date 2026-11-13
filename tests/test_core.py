@@ -79,6 +79,16 @@ class CheckTests(unittest.TestCase):
         s, w = make_pair(self.base, wdict={"Summary": "added"})
         self.assertFalse(compare(s, w).ok)
 
+    def test_import_name_added_when_wheel_metadata_version_increases(self):
+        # Regression: sdist metadata 2.4 omits Import-Name, rebuilt wheel 2.5 adds it.
+        # Under Core Metadata / PEP 643, this is an observable static-field delta.
+        s, w = make_pair(self.base,
+            sdict={"meta_version": "2.4"},
+            wdict={"meta_version": "2.5", "Import_Name": ["sample_pkg"]})
+        report = compare(s, w)
+        self.assertFalse(report.ok)
+        self.assertIn("import-name", [finding.field for finding in report.findings])
+
     def test_dynamic_single_value_may_change(self):
         s, w = make_pair(self.base,
             sdict={"Dynamic": "Summary", "Summary": "old"},
