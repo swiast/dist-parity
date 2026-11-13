@@ -42,6 +42,33 @@ jobs:
           mkdir -p external
           python -m pip download --no-deps --no-binary=:all: --dest external "packaging==25.0"
           python -m pip wheel --no-deps --wheel-dir external external/packaging-25.0.tar.gz
+      - name: Record source and wheel metadata headers
+        shell: bash
+        run: |
+          python - <<'PY'
+          from email import policy
+          from email.parser import BytesParser
+          from pathlib import Path
+          import tarfile
+          import zipfile
+
+          sdists = list(Path("external").glob("packaging-25.0.tar.gz"))
+          wheels = list(Path("external").glob("packaging-25.0-*.whl"))
+          assert len(sdists) == len(wheels) == 1, (sdists, wheels)
+          with tarfile.open(sdists[0], "r:gz") as archive:
+              info = archive.extractfile("packaging-25.0/PKG-INFO")
+              assert info is not None
+              sdata = info.read(2_000_001)
+          with zipfile.ZipFile(wheels[0]) as archive:
+              entries = [n for n in archive.namelist() if n.endswith(".dist-info/METADATA")]
+              assert len(entries) == 1, entries
+              wdata = archive.read(entries[0])
+          for label, data in (("source PKG-INFO", sdata), ("built wheel METADATA", wdata)):
+              msg = BytesParser(policy=policy.compat32).parsebytes(data)
+              print(f"{label}:")
+              for header in ("Metadata-Version", "Name", "Version", "Dynamic", "Import-Name", "Import-Namespace"):
+                  print(f"  {header}: {msg.get_all(header, [])!r}")
+          PY
       - name: Exercise real public-package diagnostic
         shell: bash
         run: |
