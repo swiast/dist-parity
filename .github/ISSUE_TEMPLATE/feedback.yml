@@ -1,0 +1,46 @@
+name: Feedback from a package maintainer
+description: Share a short evaluation or real-world test; prior usage is not required
+title: "[Feedback] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for evaluating dist-parity. A negative, inconclusive, or documentation-only review is welcome.
+        You do not need to endorse the project or have installed it to provide useful feedback.
+        Only share public or sanitized technical information. Never attach private distributions or credentials.
+  - type: dropdown
+    id: evaluation
+    attributes:
+      label: What did you actually do?
+      description: Choose the closest factual description; do not claim use you did not perform.
+      options:
+        - Read documentation/source only
+        - Tried the CLI on synthetic example artifacts
+        - Ran the CLI on distributions from a project I maintain
+        - Ran the tagged GitHub Action in my project's CI
+        - Attempted a real run but could not complete it
+        - Other evaluation
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Observations and usefulness
+      description: What worked, failed, seemed confusing, or would make this useful?
+      placeholder: The check was useful/not useful because...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction details (optional)
+      description: Sanitized tool version, Python/backend versions, and relevant headers or exit code only.
+    validations:
+      required: false
+  - type: input
+    id: downstream
+    attributes:
+      label: Public downstream repository or CI evidence (optional)
+      description: Only provide a URL you control or are explicitly authorized to share. Leave blank for private projects.
+    validations:
+      required: false

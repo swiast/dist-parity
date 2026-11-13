@@ -4,6 +4,10 @@ We are looking for feedback from Python package maintainers and release engineer
 
 Repository: https://github.com/swiast/dist-parity
 
+## First-time evaluation
+
+A [short end-to-end test guide](TRY_IT.md) explains how to install the pinned GitHub-released wheel directly without PyPI, build a package from its own sdist, and submit a short review through our [feedback form](https://github.com/swiast/dist-parity/issues/new?template=feedback.yml). Documentation-only and negative reviews are equally welcome. This is a request for genuine feedback, not stars or endorsements.
+
 ## Fast review (no installation required)
 
 Read [the scope and evidence](VALIDATION.md) and [the CLI implementation](../src/dist_parity/core.py). The main question is whether the tool catches a useful class of real release regressions **without flagging valid metadata changes**.
@@ -17,7 +21,7 @@ If you already build both wheel and sdist for your package, use the [release and
 - Is a GitHub Action step useful as part of a release pipeline?
 - Does the `packaging==25.0` `Import-Name` observation reproduce, and what metadata versions or backend behavior explain it?
 
-Please open a [GitHub issue](https://github.com/swiast/dist-parity/issues/new) with the checker version, relevant metadata headers, steps to reproduce and the expected vs actual result, or submit a small PR with a synthetic regression fixture.
+Please use the [short structured feedback form](https://github.com/swiast/dist-parity/issues/new?template=feedback.yml) or open a [GitHub issue](https://github.com/swiast/dist-parity/issues/new) with the checker version, relevant metadata headers, steps to reproduce and the expected vs actual result, or submit a small PR with a synthetic regression fixture.
 
 Issue reports from people outside the maintainer's account will be treated as independent feedback. Self-tests, self-authored issues and CI logs will **not** be reported as third-party adoption.
 

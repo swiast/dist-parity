@@ -4,6 +4,28 @@
 
 `dist-parity` compares `PKG-INFO` in a Python source distribution (`sdist`) with `METADATA` inside its wheel, implementing the [Core Metadata](https://packaging.python.org/en/latest/specifications/core-metadata/) consistency relationship from [PEP 643](https://peps.python.org/pep-0643/). It is a dependency-free, read-only Python 3.11+ CLI and GitHub composite action.
 
+## Try it on your project (GitHub release; PyPI not required)
+
+Install the **published v0.1.1 wheel** directly, without cloning or a PyPI account:
+
+```bash
+python -m pip install --no-deps "https://github.com/swiast/dist-parity/releases/download/v0.1.1/dist_parity-0.1.1-py3-none-any.whl"
+python -m pip install build
+python -m build --outdir .dist-parity-check
+dist-parity --dist-dir .dist-parity-check --json
+```
+
+Run these commands in the **root of a Python project you maintain** with
+a valid `pyproject.toml`. Use an **empty output directory** for each run.
+`python -m build` normally builds the wheel from the just-built sdist.
+Exit `0` means the fields checked by this tool matched, `1` means a
+diagnostic mismatch worth investigating, and `2` means invalid/ambiguous
+input. A mismatch is **not automatically a bug in your build backend**.
+
+Prefer automation? See the [tagged GitHub Action example](examples/workflow.yml).
+We would value [a brief public review, even from a first-time user](docs/REVIEW_REQUEST.md).
+Please do not post proprietary archives, private names, tokens, or credentials.
+
 ## What it checks
 
 - Sdist and wheel agree on distribution **Name** and **Version**.
