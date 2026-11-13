@@ -21,6 +21,8 @@ The same published `packaging==25.0` source distribution yields different metada
 
 [CI run with both pinned builds and full logs](https://github.com/swiast/dist-parity/actions/runs/43434676911). This demonstrates that metadata consistency diagnostics can change when a build backend is upgraded, without changing the source archive. It **does not** establish a bug in `packaging` or Flit. The open question is whether PEP 643's rule applies to fields introduced only after the sdist's metadata version; see [issue #1](https://github.com/swiast/dist-parity/issues/1).
 
+**Upstream discussion status (2026-11-13):** A reproducible compatibility question was filed with the Flit maintainers as [pypa/flit#845](https://github.com/pypa/flit/issues/845). This is a request for clarification, not a confirmed bug report or evidence of third-party adoption. The implementation remains unchanged pending a standards-based conclusion.
+
 ## Scope: a narrow extra check
 
 | Tool | Main check | What dist-parity adds |
