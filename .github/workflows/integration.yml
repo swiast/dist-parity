@@ -67,13 +67,26 @@ jobs:
           print("Historical flit_core: 3.12.0")
           print("Historical built wheel Metadata-Version:", data.get("Metadata-Version"))
           print("Historical built wheel Import-Name:", data.get_all("Import-Name", []))
+          assert data.get("Metadata-Version") == "2.4", "historical metadata version changed"
+          assert data.get_all("Import-Name", []) == [], "historical wheel unexpectedly declares Import-Name"
           PY
           status=0
-          python -m dist_parity --sdist external/packaging-25.0.tar.gz --wheel external/flit312/packaging-25.0-*.whl || status=$?
-          if [[ "$status" != "0" && "$status" != "1" ]]; then
-            exit "$status"
+          python -m dist_parity --sdist external/packaging-25.0.tar.gz --wheel external/flit312/packaging-25.0-*.whl --json > external/flit312/diagnostic.json || status=$?
+          if [[ "$status" -ne 0 ]]; then
+            echo "Expected PARITY_OK for packaging 25.0 rebuilt with flit_core 3.12.0; got exit $status" >&2
+            cat external/flit312/diagnostic.json
+            exit 1
           fi
-          echo "Historical flit_core 3.12.0 diagnostic exit: $status" >> "$GITHUB_STEP_SUMMARY"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path("external/flit312/diagnostic.json").read_text())
+          assert result["ok"] is True, result
+          assert result["project"] == "packaging", result
+          assert not [item for item in result["findings"] if item["severity"] == "error"], result
+          print("ASSERTED historical flit_core 3.12.0: parity PASS")
+          PY
+          echo "ASSERTED: flit_core 3.12.0 → parity PASS (exit 0)" >> "$GITHUB_STEP_SUMMARY"
       - name: Record source and wheel metadata headers
         shell: bash
         run: |
@@ -95,11 +108,16 @@ jobs:
               entries = [n for n in archive.namelist() if n.endswith(".dist-info/METADATA")]
               assert len(entries) == 1, entries
               wdata = archive.read(entries[0])
+          parsed = {}
           for label, data in (("source PKG-INFO", sdata), ("built wheel METADATA", wdata)):
               msg = BytesParser(policy=policy.compat32).parsebytes(data)
+              parsed[label] = msg
               print(f"{label}:")
               for header in ("Metadata-Version", "Name", "Version", "Dynamic", "Import-Name", "Import-Namespace"):
                   print(f"  {header}: {msg.get_all(header, [])!r}")
+          assert parsed["source PKG-INFO"].get("Metadata-Version") == "2.4"
+          assert parsed["built wheel METADATA"].get("Metadata-Version") == "2.5"
+          assert parsed["built wheel METADATA"].get_all("Import-Name", []) == ["packaging"]
           PY
       - name: Exercise real public-package diagnostic
         shell: bash
@@ -107,8 +125,8 @@ jobs:
           set -euo pipefail
           status=0
           python -m dist_parity --sdist external/packaging-25.0.tar.gz --wheel external/packaging-25.0-*.whl --json > external/diagnostic.json || status=$?
-          if [[ "$status" != "0" && "$status" != "1" ]]; then
-            echo "Unexpected input or execution error: exit $status"
+          if [[ "$status" -ne 1 ]]; then
+            echo "Expected FIELD_MISMATCH for packaging 25.0 rebuilt with flit_core 4.2.0; got exit $status" >&2
             cat external/diagnostic.json
             exit 1
           fi
@@ -118,7 +136,10 @@ jobs:
           from pathlib import Path
           report = json.loads(Path("external/diagnostic.json").read_text())
           assert report["project"] == "packaging", report
-          assert isinstance(report["findings"], list)
+          assert report["ok"] is False, report
+          errors = [(item["code"], item.get("field")) for item in report["findings"] if item["severity"] == "error"]
+          assert errors == [("FIELD_MISMATCH", "import-name")], errors
+          print("ASSERTED flit_core 4.2.0: exactly one Import-Name metadata mismatch")
           print(json.dumps(report, indent=2))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
               summary.write("packaging 25.0 sdist-to-wheel diagnostic: " +
