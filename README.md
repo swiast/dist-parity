@@ -25,6 +25,14 @@ python -m build  # run in your target Python package, requires the separate 'bui
 python -m dist_parity --dist-dir dist
 ```
 
+Without cloning the source, you can install the tagged GitHub release directly (requires Git):
+
+```bash
+python -m pip install "git+https://github.com/swiast/dist-parity.git@v0.1.0"
+```
+
+**PyPI status:** a manual, trusted publishing workflow is prepared, but a PyPI release has **not been verified**. Maintainers can follow the [PyPI setup guide](docs/PYPI_PUBLISHING.md); do not assume `pip install dist-parity` is available until PyPI lists the project.
+
 Or install the checker in one environment and run it against explicit artifacts:
 
 ```bash
