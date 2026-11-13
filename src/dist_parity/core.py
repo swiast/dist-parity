@@ -58,6 +58,20 @@ class ArtifactError(ValueError):
     """Invalid, missing, ambiguous, or unsupported distribution archive."""
 
 
+def _name_from_stem(stem: str, kind: str) -> str:
+    """Read the distribution name from a name-version artifact component."""
+    if "-" not in stem:
+        raise ArtifactError(f"{kind}: expected normalized distribution-version name")
+    name, version = stem.rsplit("-", 1)
+    if not name or not version:
+        raise ArtifactError(f"{kind}: missing distribution name or version")
+    return name
+
+
+def _name_matches_metadata(candidate: str, name: str) -> bool:
+    return _normalize_name(candidate) == _normalize_name(name)
+
+
 def _valid_archive_path(name: str) -> bool:
     p = PurePosixPath(name)
     return (
@@ -119,7 +133,15 @@ def _sdist_metadata(path: Path) -> dict[str, list[str]]:
             stream = archive.extractfile(info)
             if stream is None:
                 raise ArtifactError("sdist: PKG-INFO is unreadable")
-            return _decode_metadata(stream.read(MAX_METADATA_BYTES + 1), meta_name)
+            metadata = _decode_metadata(stream.read(MAX_METADATA_BYTES + 1), meta_name)
+            expected = metadata["name"][0]
+            file_name = _name_from_stem(path.name[:-7], "sdist filename")
+            root_name = _name_from_stem(root, "sdist root directory")
+            if not _name_matches_metadata(file_name, expected):
+                raise ArtifactError("sdist filename distribution name differs from PKG-INFO Name")
+            if not _name_matches_metadata(root_name, expected):
+                raise ArtifactError("sdist root directory distribution name differs from PKG-INFO Name")
+            return metadata
     except (OSError, tarfile.TarError, EOFError) as exc:
         raise ArtifactError(f"could not read sdist {path}: {exc}") from exc
 
@@ -156,7 +178,18 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
                 data = stream.read(MAX_METADATA_BYTES + 1)
             if len(data) > MAX_METADATA_BYTES:
                 raise ArtifactError("wheel: METADATA exceeds metadata size limit")
-            return _decode_metadata(data, meta[0])
+            metadata = _decode_metadata(data, meta[0])
+            expected = metadata["name"][0]
+            wheel_parts = path.name[:-4].split("-")
+            if len(wheel_parts) not in (5, 6) or not all(wheel_parts):
+                raise ArtifactError("wheel filename: expected distribution-version[-build]-python-abi-platform.whl")
+            wheel_name = wheel_parts[0]
+            dist_info_name = _name_from_stem(base.removesuffix(".dist-info"), "wheel dist-info directory")
+            if not _name_matches_metadata(wheel_name, expected):
+                raise ArtifactError("wheel filename distribution name differs from METADATA Name")
+            if not _name_matches_metadata(dist_info_name, expected):
+                raise ArtifactError("wheel dist-info directory distribution name differs from METADATA Name")
+            return metadata
     except (OSError, zipfile.BadZipFile, RuntimeError, EOFError, zlib.error) as exc:
         raise ArtifactError(f"could not read wheel {path}: {exc}") from exc
 
