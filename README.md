@@ -42,6 +42,23 @@ dist-parity --dist-dir dist --json
 
 `--dist-dir` accepts exactly one `.tar.gz` and one `.whl`. When you build multiple platform wheels, invoke once per wheel with `--sdist` and `--wheel`.
 
+## 30-second synthetic demonstration
+
+No package registry or private artifacts are required. After installing the project
+from this repository, run:
+
+```bash
+python examples/quickstart.py
+```
+
+This creates temporary synthetic sdist and wheel files that disagree on a
+non-`Dynamic` `Requires-Python` field. The example succeeds **only if**
+`dist-parity` reports the intentionally introduced metadata mismatch.
+The files are deleted automatically. See the
+[example source](examples/quickstart.py).
+
+This is a maintainer-authored demonstration, **not** third-party adoption.
+
 ## GitHub Actions
 
 ```yaml
