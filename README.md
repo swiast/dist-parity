@@ -34,7 +34,7 @@ dist-parity --dist-dir dist --json
 
 `--dist-dir` accepts exactly one `.tar.gz` and one `.whl`. When you build multiple platform wheels, invoke once per wheel with `--sdist` and `--wheel`.
 
-## GitHub Actions (after v0.1.0 is published)
+## GitHub Actions (published v0.1.0)
 
 ```yaml
 - uses: actions/checkout@v4
@@ -48,7 +48,7 @@ dist-parity --dist-dir dist --json
     dist-dir: dist
 ```
 
-Use this snippet **inside a job** that builds a Python distribution from its own source. The `swiast/dist-parity@v0.1.0` reference will work **only after** this repo and tag have been published. For local development, set `PYTHONPATH=src` and run `python -m dist_parity --dist-dir dist`.
+Use this snippet **inside a job** that builds a Python distribution from its own source. The `swiast/dist-parity@v0.1.0` tag is published in [GitHub Releases](https://github.com/swiast/dist-parity/releases/tag/v0.1.0). For local development, set `PYTHONPATH=src` and run `python -m dist_parity --dist-dir dist`.
 
 ## Exit codes
 
@@ -82,6 +82,14 @@ PYTHONPATH=src python -m dist_parity --dist-dir dist
 ```
 
 Contributions: [CONTRIBUTING.md](CONTRIBUTING.md). Security: [SECURITY.md](SECURITY.md). License: [MIT](LICENSE).
+
+## Evidence, limitations, and review
+
+- [Reproducible maintainer validation, limitations, and complementary tools](docs/VALIDATION.md)
+- [Request for independent review and reproducible bug reports](docs/REVIEW_REQUEST.md)
+- [Open investigation of packaging 25.0 metadata mismatch](https://github.com/swiast/dist-parity/issues/1)
+
+Self-authored tests, issues and build logs are not evidence of third-party adoption. Independent use has not yet been established.
 
 ## Why this exists
 
