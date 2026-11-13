@@ -10,3 +10,4 @@ Purpose: a small, read-only tool checking Python distribution core-metadata pari
 - Update tests, README and CHANGELOG for behavior changes.
 - Provide evidence of the failing scenario and the verified fix in PR descriptions.
 - Never fabricate GitHub usage, users, issues, downloads, reviews or benchmarks.
+- Before proposing a GitHub issue, comment or PR on any **third-party repository**, first read its current contribution guidelines and AI/LLM policy. Do not submit AI-assisted material where prohibited. Require a human to take ownership and review any allowed submission. Never treat a maintainer's response or a self-authored issue as accepted contribution or adoption.
