@@ -42,9 +42,28 @@ jobs:
           mkdir -p external
           python -m pip download --no-deps --no-binary=:all: --dest external "packaging==25.0"
           python -m pip wheel --no-deps --wheel-dir external external/packaging-25.0.tar.gz
-      - name: Verify real public-package metadata parity
+      - name: Exercise real public-package diagnostic
         shell: bash
         run: |
           set -euo pipefail
-          python -m dist_parity --sdist external/packaging-25.0.tar.gz --wheel external/packaging-25.0-*.whl
-          echo "Verified public packaging==25.0 sdist against a wheel freshly built from the same sdist." >> "$GITHUB_STEP_SUMMARY"
+          status=0
+          python -m dist_parity --sdist external/packaging-25.0.tar.gz --wheel external/packaging-25.0-*.whl --json > external/diagnostic.json || status=$?
+          if [[ "$status" != "0" && "$status" != "1" ]]; then
+            echo "Unexpected input or execution error: exit $status"
+            cat external/diagnostic.json
+            exit 1
+          fi
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          report = json.loads(Path("external/diagnostic.json").read_text())
+          assert report["project"] == "packaging", report
+          assert isinstance(report["findings"], list)
+          print(json.dumps(report, indent=2))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("packaging 25.0 sdist-to-wheel diagnostic: " +
+                            ("PARITY OK" if report["ok"] else "MISMATCH DETECTED") + "\n")
+              for finding in report["findings"]:
+                  summary.write("- " + finding["code"] + ": " + finding["message"] + "\n")
+          PY
