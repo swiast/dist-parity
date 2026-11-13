@@ -8,6 +8,7 @@ import tempfile
 import unittest
 import zipfile
 from contextlib import redirect_stdout
+from unittest.mock import patch
 from pathlib import Path
 
 from dist_parity.cli import main
@@ -161,6 +162,30 @@ class CheckTests(unittest.TestCase):
     def test_unsupported_wheel_major_fails(self):
         s, w = make_pair(self.base, wdict={"meta_version": "3.0"})
         with self.assertRaisesRegex(ArtifactError, "unsupported Metadata-Version major"):
+            compare(s, w)
+
+    def test_truncated_gzip_returns_input_error(self):
+        s, w = make_pair(self.base)
+        s.write_bytes(s.read_bytes()[:-50])
+        output = io.StringIO()
+        with redirect_stdout(output):
+            status = main(["--sdist", str(s), "--wheel", str(w), "--json"])
+        self.assertEqual(status, 2)
+        self.assertIn("could not read sdist", json.loads(output.getvalue())["error"])
+
+    def test_wheel_metadata_read_is_bounded_stream(self):
+        s, w = make_pair(self.base)
+        # Regressions to unbounded ZipFile.read should be rejected by this test.
+        with patch.object(zipfile.ZipFile, "read", side_effect=AssertionError("unbounded ZIP read")):
+            self.assertTrue(compare(s, w).ok)
+
+    def test_wheel_metadata_size_limit(self):
+        s, w = make_pair(self.base)
+        with zipfile.ZipFile(w, "w", compression=zipfile.ZIP_DEFLATED) as out:
+            out.writestr("sample_pkg-1.0.dist-info/METADATA", b"X" * 2_000_001)
+            out.writestr("sample_pkg-1.0.dist-info/WHEEL", "Wheel-Version: 1.0\n")
+            out.writestr("sample_pkg-1.0.dist-info/RECORD", "")
+        with self.assertRaisesRegex(ArtifactError, "exceeds metadata size limit"):
             compare(s, w)
 
     def test_missing_archive(self):
