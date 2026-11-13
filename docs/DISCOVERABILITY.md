@@ -19,13 +19,11 @@ from a README edit, GitHub CI result or absence of an error.
 
 ## Publish the composite Action in GitHub Marketplace
 
-Source of truth: [GitHub's Marketplace publication instructions]
-(https://docs.github.com/en/actions/how-tos/create-and-publish-actions/publish-in-github-marketplace).
+Source of truth: [GitHub's Marketplace publication instructions](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/publish-in-github-marketplace).
 
 The repository already has a public root-level `action.yml` with `name`,
 `description` and `branding`, plus tagged GitHub releases and a passing
-[tagged Action smoke test]
-(https://github.com/swiast/dist-parity/actions/runs/43484099851).
+[tagged Action smoke test](https://github.com/swiast/dist-parity/actions/runs/43484099851).
 
 Publication still requires account-level operations and verification:
 
