@@ -17,8 +17,7 @@ dist-parity --dist-dir .dist-parity-check --json
 
 Run from your **project root** and start with an **empty**
 `.dist-parity-check` output directory. The package is installed from the
-immutable GitHub release asset, not from PyPI. The [public release-smoke CI]
-(https://github.com/swiast/dist-parity/actions/runs/43484099851)
+immutable GitHub release asset, not from PyPI. The [public release-smoke CI](https://github.com/swiast/dist-parity/actions/runs/43484099851)
 has already verified installability on Python 3.11, 3.12 and 3.13.
 
 A checker exit code of `0` means all checked fields matched; `1`
@@ -40,8 +39,7 @@ and ensure the distribution directory contains only one sdist/wheel pair.
 
 ## Please tell us what happened
 
-Use the [structured feedback form]
-(https://github.com/swiast/dist-parity/issues/new?template=feedback.yml)
+Use the [structured feedback form](https://github.com/swiast/dist-parity/issues/new?template=feedback.yml)
 to report whether you only read the docs, ran the tool locally, tried
 the Action, or could not complete the test. Useful responses include:
 
