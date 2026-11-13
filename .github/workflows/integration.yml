@@ -41,11 +41,11 @@ jobs:
           set -euo pipefail
           mkdir -p external
           python -m pip download --no-deps --no-binary=:all: --dest external "packaging==25.0"
-          python -m pip install "setuptools==84.2.1" wheel
+          python -m pip install "flit_core==4.2.0" "wheel==0.48.0"
           python -m pip wheel --no-deps --no-build-isolation --wheel-dir external external/packaging-25.0.tar.gz
           python - <<'PY'
           from importlib.metadata import version
-          for package in ("setuptools", "pip", "wheel"):
+          for package in ("flit_core", "pip", "wheel"):
               print(f"Build environment: {package}=={version(package)}")
           PY
       - name: Record source and wheel metadata headers
