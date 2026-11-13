@@ -48,6 +48,32 @@ jobs:
           for package in ("flit_core", "pip", "wheel"):
               print(f"Build environment: {package}=={version(package)}")
           PY
+      - name: Compare with historical flit_core 3.12.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install "flit_core==3.12.0"
+          mkdir -p external/flit312
+          python -m pip wheel --no-deps --no-build-isolation --wheel-dir external/flit312 external/packaging-25.0.tar.gz
+          python - <<'PY'
+          from email import policy
+          from email.parser import BytesParser
+          from pathlib import Path
+          import zipfile
+          wheel, = Path("external/flit312").glob("packaging-25.0-*.whl")
+          with zipfile.ZipFile(wheel) as archive:
+              name, = (p for p in archive.namelist() if p.endswith(".dist-info/METADATA"))
+              data = BytesParser(policy=policy.compat32).parsebytes(archive.read(name))
+          print("Historical flit_core: 3.12.0")
+          print("Historical built wheel Metadata-Version:", data.get("Metadata-Version"))
+          print("Historical built wheel Import-Name:", data.get_all("Import-Name", []))
+          PY
+          status=0
+          python -m dist_parity --sdist external/packaging-25.0.tar.gz --wheel external/flit312/packaging-25.0-*.whl || status=$?
+          if [[ "$status" != "0" && "$status" != "1" ]]; then
+            exit "$status"
+          fi
+          echo "Historical flit_core 3.12.0 diagnostic exit: $status" >> "$GITHUB_STEP_SUMMARY"
       - name: Record source and wheel metadata headers
         shell: bash
         run: |
