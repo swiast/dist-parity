@@ -59,14 +59,64 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(result.version, "1.0")
 
     def test_normalized_name(self):
-        s, w = make_pair(self.base, sdict={"name": "a.b_c"}, wdict={"name": "a-b-c"})
+        s, w = make_pair(self.base, sdict={"name": "SAMPLE.PKG"}, wdict={"name": "sample-pkg"})
         self.assertTrue(compare(s, w).ok)
 
     def test_name_and_version_mismatch(self):
         s, w = make_pair(self.base, wdict={"name": "another", "version": "2.0"})
-        result = compare(s, w)
-        self.assertFalse(result.ok)
-        self.assertEqual({f.code for f in result.findings}, {"NAME_MISMATCH", "VERSION_MISMATCH"})
+        with self.assertRaisesRegex(ArtifactError, "wheel filename distribution name differs"):
+            compare(s, w)
+
+    def test_distinct_valid_artifact_metadata_reports_name_and_version_mismatch(self):
+        s, w = make_pair(self.base)
+        with zipfile.ZipFile(w, "w") as out:
+            out.writestr("another-2.0.dist-info/METADATA", meta(name="another", version="2.0"))
+            out.writestr("another-2.0.dist-info/WHEEL", "Wheel-Version: 1.0\n")
+            out.writestr("another-2.0.dist-info/RECORD", "")
+        w = w.rename(self.base / "another-2.0-py3-none-any.whl")
+        report = compare(s, w)
+        self.assertFalse(report.ok)
+        self.assertEqual({f.code for f in report.findings}, {"NAME_MISMATCH", "VERSION_MISMATCH"})
+
+    def test_sdist_filename_identity_rejected(self):
+        s, w = make_pair(self.base)
+        s = s.rename(self.base / "unrelated-1.0.tar.gz")
+        with self.assertRaisesRegex(ArtifactError, "sdist filename distribution name differs"):
+            compare(s, w)
+
+    def test_sdist_root_identity_rejected(self):
+        s, w = make_pair(self.base)
+        members = []
+        with tarfile.open(s, "r:gz") as archive:
+            for m in archive.getmembers():
+                members.append((m.name, archive.extractfile(m).read()))
+        with tarfile.open(s, "w:gz") as archive:
+            for name, data in members:
+                item = tarfile.TarInfo(name.replace("sample_pkg-1.0/", "different-1.0/"))
+                item.size = len(data)
+                archive.addfile(item, io.BytesIO(data))
+        with self.assertRaisesRegex(ArtifactError, "sdist root directory distribution name differs"):
+            compare(s, w)
+
+    def test_wheel_filename_identity_rejected(self):
+        s, w = make_pair(self.base)
+        w = w.rename(self.base / "unrelated-1.0-py3-none-any.whl")
+        with self.assertRaisesRegex(ArtifactError, "wheel filename distribution name differs"):
+            compare(s, w)
+
+    def test_wheel_dist_info_identity_rejected(self):
+        s, w = make_pair(self.base)
+        with zipfile.ZipFile(w, "w") as out:
+            out.writestr("other_pkg-1.0.dist-info/METADATA", meta())
+            out.writestr("other_pkg-1.0.dist-info/WHEEL", "Wheel-Version: 1.0\n")
+            out.writestr("other_pkg-1.0.dist-info/RECORD", "")
+        with self.assertRaisesRegex(ArtifactError, "wheel dist-info directory distribution name differs"):
+            compare(s, w)
+
+    def test_wheel_build_tag_accepted(self):
+        s, w = make_pair(self.base)
+        w = w.rename(self.base / "sample_pkg-1.0-1-py3-none-any.whl")
+        self.assertTrue(compare(s, w).ok)
 
     def test_nondynamic_requires_python_mismatch(self):
         s, w = make_pair(self.base,
