@@ -9,6 +9,18 @@ This note records **maintainer-performed checks**, not independent adoption or a
 - A composite-action run validates a newly built set of the project's own distributions. The same workflow obtains the unrelated `packaging==25.0` sdist, builds a wheel from **that sdist**, and prints a parity diagnostic: https://github.com/swiast/dist-parity/actions/runs/43431651062
 - The `packaging==25.0` test reports a **mismatch**, not a successful parity check: the rebuilt wheel contains `Import-Name: packaging`, while the sdist omits it. The CI log records source Metadata-Version 2.4, wheel Metadata-Version 2.5, and no Dynamic field in either. [Issue #1](https://github.com/swiast/dist-parity/issues/1) tracks remaining questions about isolated build-backend provenance and cross-version interpretation. **Do not describe this as an upstream packaging defect**.
 
+## Pinned build-backend comparison (reproducible)
+
+The same published `packaging==25.0` source distribution yields different metadata when built with different supported versions of its declared Flit backend (`flit_core >=3.3`):
+
+| Build artifact | Metadata version | `Import-Name` | Parity |
+| --- | --- | --- | --- |
+| sdist `PKG-INFO` | 2.4 | absent | — |
+| wheel rebuilt using `flit_core==3.12.0` | 2.4 | absent | PASS |
+| wheel rebuilt using `flit_core==4.2.0` | 2.5 | `packaging` | MISMATCH |
+
+[CI run with both pinned builds and full logs](https://github.com/swiast/dist-parity/actions/runs/43434676911). This demonstrates that metadata consistency diagnostics can change when a build backend is upgraded, without changing the source archive. It **does not** establish a bug in `packaging` or Flit. The open question is whether PEP 643's rule applies to fields introduced only after the sdist's metadata version; see [issue #1](https://github.com/swiast/dist-parity/issues/1).
+
 ## Scope: a narrow extra check
 
 | Tool | Main check | What dist-parity adds |
