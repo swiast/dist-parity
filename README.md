@@ -10,6 +10,7 @@
 - All non-`Dynamic` metadata fields match, for sdist metadata version 2.2+.
 - `Dynamic` multivalued fields preserve their source values as an unchanged prefix (new values appended) when the source metadata version is 2.6+; earlier versions allow broader changes.
 - Archives contain required metadata files; no suspicious traversal paths or duplicate wheel entries.
+- Archive distribution-name identity matches across sdist filename/root/PKG-INFO and wheel filename/.dist-info/METADATA (new on unreleased `main`).
 - Unknown future minor Core Metadata versions trigger warnings; unsupported future major versions fail closed.
 - Machine-readable JSON is available for downstream CI tools.
 
