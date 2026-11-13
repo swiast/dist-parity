@@ -1,0 +1,80 @@
+name: Published v0.1.1 release smoke
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/release-smoke.yml'
+      - 'docs/RELEASE_VALIDATION.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-smoke.yml'
+      - 'docs/RELEASE_VALIDATION.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  released-cli:
+    name: Install published wheel (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Download immutable GitHub release assets and verify recorded hashes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          gh release download v0.1.1 --repo swiast/dist-parity --dir release \
+            --pattern 'dist_parity-0.1.1*'
+          test "$(find release -maxdepth 1 -type f | wc -l)" -eq 2
+          cd release
+          cat <<'CHECKSUMS' | sha256sum --check --strict
+          2d9664238562ea969d93713cc8f68a6f00943155b24f82813f54a6908cfd7488  dist_parity-0.1.1-py3-none-any.whl
+          12ff6f78b27bbd0fc8ca72d4754f4b970125ad1fd5a1807b763f3ef57ce7a548  dist_parity-0.1.1.tar.gz
+          CHECKSUMS
+      - name: Install the released wheel, not the checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --no-deps ./release/dist_parity-0.1.1-py3-none-any.whl
+          python - <<'PY'
+          from importlib.metadata import version
+          import dist_parity
+          assert version("dist-parity") == "0.1.1"
+          assert dist_parity.__version__ == "0.1.1"
+          print("Installed immutable GitHub v0.1.1 wheel successfully")
+          PY
+          dist-parity --help >/dev/null
+          python -m dist_parity --help >/dev/null
+      - name: Run negative-control quickstart with installed wheel
+        run: python examples/quickstart.py
+
+  released-action:
+    name: Execute published v0.1.1 composite action
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build source distribution and wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install build
+          python -m build
+      - name: Run composite action at immutable published tag
+        uses: swiast/dist-parity@v0.1.1
+        with:
+          dist-dir: dist

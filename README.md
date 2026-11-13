@@ -114,6 +114,7 @@ Contributions: [CONTRIBUTING.md](CONTRIBUTING.md). Security: [SECURITY.md](SECUR
 ## Evidence, limitations, and review
 
 - [Reproducible maintainer validation, limitations, and complementary tools](docs/VALIDATION.md)
+- [Published v0.1.1 wheel installation and tagged Action smoke verification](docs/RELEASE_VALIDATION.md)
 - [Request for independent review and reproducible bug reports](docs/REVIEW_REQUEST.md)
 - [Open investigation of packaging 25.0 metadata mismatch](https://github.com/swiast/dist-parity/issues/1)
 
