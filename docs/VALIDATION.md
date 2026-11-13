@@ -6,8 +6,8 @@ This note records **maintainer-performed checks**, not independent adoption or a
 
 - The `v0.1.0` release publishes a source archive and wheel: https://github.com/swiast/dist-parity/releases/tag/v0.1.0
 - CI exercises the CLI and regression tests on Python 3.11–3.13: https://github.com/swiast/dist-parity/actions
-- A composite-action run validates a newly built set of the project's own distributions. The same workflow obtains the unrelated `packaging==25.0` sdist, builds a wheel from **that sdist**, and prints a parity diagnostic: https://github.com/swiast/dist-parity/actions/runs/43424837318
-- The `packaging==25.0` test reports a **mismatch**, not a successful parity check: the rebuilt wheel contains `Import-Name: packaging`, while the sdist was reported to omit it. The investigation is open in [issue #1](https://github.com/swiast/dist-parity/issues/1). Until the exact metadata versions, build backend and headers are recorded, **do not describe this as an upstream packaging defect**.
+- A composite-action run validates a newly built set of the project's own distributions. The same workflow obtains the unrelated `packaging==25.0` sdist, builds a wheel from **that sdist**, and prints a parity diagnostic: https://github.com/swiast/dist-parity/actions/runs/43431651062
+- The `packaging==25.0` test reports a **mismatch**, not a successful parity check: the rebuilt wheel contains `Import-Name: packaging`, while the sdist omits it. The CI log records source Metadata-Version 2.4, wheel Metadata-Version 2.5, and no Dynamic field in either. [Issue #1](https://github.com/swiast/dist-parity/issues/1) tracks remaining questions about isolated build-backend provenance and cross-version interpretation. **Do not describe this as an upstream packaging defect**.
 
 ## Scope: a narrow extra check
 
