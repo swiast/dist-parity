@@ -9,7 +9,7 @@ for stars. If you have not run the tool, please say so.
 Requires Python 3.11+ and a Python project that builds sdist and wheel:
 
 ```bash
-python -m pip install --no-deps "https://github.com/swiast/dist-parity/releases/download/v0.1.1/dist_parity-0.1.1-py3-none-any.whl"
+python -m pip install --no-deps "https://github.com/swiast/dist-parity/releases/download/v0.1.2/dist_parity-0.1.2-py3-none-any.whl"
 python -m pip install build
 python -m build --outdir .dist-parity-check
 dist-parity --dist-dir .dist-parity-check --json
@@ -17,8 +17,7 @@ dist-parity --dist-dir .dist-parity-check --json
 
 Run from your **project root** and start with an **empty**
 `.dist-parity-check` output directory. The package is installed from the
-immutable GitHub release asset, not from PyPI. The [public release-smoke CI](https://github.com/swiast/dist-parity/actions/runs/43484099851)
-has already verified installability on Python 3.11, 3.12 and 3.13.
+versioned GitHub release asset, not from PyPI. The [v0.1.2 release CI](https://github.com/swiast/dist-parity/actions/runs/43525912471) verified published hashes. The [tagged release-smoke workflow](../.github/workflows/release-smoke.yml) tests installation on Python 3.11, 3.12 and 3.13; check the actual run before claiming it passed.
 
 A checker exit code of `0` means all checked fields matched; `1`
 identifies a metadata discrepancy that requires investigation; and `2`
@@ -35,11 +34,10 @@ If your build creates multiple wheels, pass explicit `--sdist` and
 For a Python package's existing build job, the
 [tagged Action example](../examples/workflow.yml) can be copied into
 your workflow. Use a wheel built from the corresponding source distribution,
-and ensure the distribution directory contains only one sdist/wheel pair.
-The published `v0.1.1` Action only offers `dist-dir`. The unreleased `main`
-Action also accepts **both** `sdist` and `wheel` input paths, selecting a
-specific pair from a directory with multiple wheels. This is not available
-in the released tag yet; do not assume the new inputs work with `@v0.1.1`.
+and use `dist-dir` when the distribution directory has exactly one pair.
+For multi-wheel builds, published `@v0.1.2` supports **both** `sdist` and
+`wheel` inputs to select one matching pair per invocation. No upstream package
+or repository changes are required to run a local evaluation.
 
 ## Please tell us what happened
 

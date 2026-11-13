@@ -1,4 +1,4 @@
-name: Published v0.1.1 release smoke
+name: Published v0.1.2 release smoke
 
 on:
   pull_request:
@@ -28,32 +28,32 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Download immutable GitHub release assets and verify recorded hashes
+      - name: Download published GitHub release assets and verify recorded hashes
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p release
-          gh release download v0.1.1 --repo swiast/dist-parity --dir release \
-            --pattern 'dist_parity-0.1.1*'
+          gh release download v0.1.2 --repo swiast/dist-parity --dir release \
+            --pattern 'dist_parity-0.1.2*'
           test "$(find release -maxdepth 1 -type f | wc -l)" -eq 2
           cd release
           cat <<'CHECKSUMS' | sha256sum --check --strict
-          2d9664238562ea969d93713cc8f68a6f00943155b24f82813f54a6908cfd7488  dist_parity-0.1.1-py3-none-any.whl
-          12ff6f78b27bbd0fc8ca72d4754f4b970125ad1fd5a1807b763f3ef57ce7a548  dist_parity-0.1.1.tar.gz
+          f7404baf015ebea9a188764713839b5a0244d6237dfe46b12c5d2ff576f75aa1  dist_parity-0.1.2-py3-none-any.whl
+          40e61f0b8fdc9cb5a5e66fd3a561b7b314c744a9c431ecfc15cce89008d851da  dist_parity-0.1.2.tar.gz
           CHECKSUMS
       - name: Install the released wheel, not the checkout
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --no-deps ./release/dist_parity-0.1.1-py3-none-any.whl
+          python -m pip install --no-deps ./release/dist_parity-0.1.2-py3-none-any.whl
           python - <<'PY'
           from importlib.metadata import version
           import dist_parity
-          assert version("dist-parity") == "0.1.1"
-          assert dist_parity.__version__ == "0.1.1"
-          print("Installed immutable GitHub v0.1.1 wheel successfully")
+          assert version("dist-parity") == "0.1.2"
+          assert dist_parity.__version__ == "0.1.2"
+          print("Installed GitHub v0.1.2 wheel successfully")
           PY
           dist-parity --help >/dev/null
           python -m dist_parity --help >/dev/null
@@ -61,7 +61,7 @@ jobs:
         run: python examples/quickstart.py
 
   released-action:
-    name: Execute published v0.1.1 composite action
+    name: Execute published v0.1.2 composite action
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +74,30 @@ jobs:
           set -euo pipefail
           python -m pip install build
           python -m build
-      - name: Run composite action at immutable published tag
-        uses: swiast/dist-parity@v0.1.1
+      - name: Run composite action at published tag
+        uses: swiast/dist-parity@v0.1.2
         with:
           dist-dir: dist
+      - name: Stage extra wheel and select explicit matching pair
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdist="$(find dist -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          wheel="$(find dist -maxdepth 1 -type f -name '*.whl' -print -quit)"
+          test -n "$sdist" && test -n "$wheel"
+          cp "$wheel" dist/ignored-0.0-py3-none-any.whl
+          printf 'CHECK_SDIST=%s\nCHECK_WHEEL=%s\n' "$sdist" "$wheel" >> "$GITHUB_ENV"
+      - name: Run published Action with explicit artifact pair
+        uses: swiast/dist-parity@v0.1.2
+        with:
+          sdist: ${{ env.CHECK_SDIST }}
+          wheel: ${{ env.CHECK_WHEEL }}
+      - name: Published Action should reject incomplete pair
+        id: incomplete_pair
+        continue-on-error: true
+        uses: swiast/dist-parity@v0.1.2
+        with:
+          sdist: ${{ env.CHECK_SDIST }}
+      - name: Verify incomplete pair failure
+        if: always()
+        run: test "${{ steps.incomplete_pair.outcome }}" = "failure"

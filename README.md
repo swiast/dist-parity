@@ -6,10 +6,10 @@
 
 ## Try it on your project (GitHub release; PyPI not required)
 
-Install the **published v0.1.1 wheel** directly, without cloning or a PyPI account:
+Install the **published v0.1.2 wheel** directly, without cloning or a PyPI account:
 
 ```bash
-python -m pip install --no-deps "https://github.com/swiast/dist-parity/releases/download/v0.1.1/dist_parity-0.1.1-py3-none-any.whl"
+python -m pip install --no-deps "https://github.com/swiast/dist-parity/releases/download/v0.1.2/dist_parity-0.1.2-py3-none-any.whl"
 python -m pip install build
 python -m build --outdir .dist-parity-check
 dist-parity --dist-dir .dist-parity-check --json
@@ -33,7 +33,7 @@ Please do not post proprietary archives, private names, tokens, or credentials.
 - `Dynamic` multivalued fields preserve their source values as an unchanged prefix (new values appended) when the source metadata version is 2.6+; earlier versions allow broader changes.
 - Archives contain required metadata files; no suspicious traversal paths or duplicate wheel entries.
 - Archive distribution-name identity matches across sdist filename/root/PKG-INFO and wheel filename/.dist-info/METADATA.
-- On unreleased `main`, obviously conflicting numeric release versions in filenames/archive directories are rejected without treating equivalent forms such as `1.0` and `1.0.0` as different.
+- Obviously conflicting numeric release versions in filenames/archive directories are rejected without treating equivalent forms such as `1.0` and `1.0.0` as different.
 - Unknown future minor Core Metadata versions trigger warnings; unsupported future major versions fail closed.
 - Machine-readable JSON is available for downstream CI tools.
 
@@ -52,10 +52,10 @@ python -m dist_parity --dist-dir dist
 Without cloning the source, you can install the tagged GitHub release directly (requires Git):
 
 ```bash
-python -m pip install "git+https://github.com/swiast/dist-parity.git@v0.1.1"
+python -m pip install "git+https://github.com/swiast/dist-parity.git@v0.1.2"
 ```
 
-**Version note:** The original `v0.1.0` release remains immutable. Version `v0.1.1` includes updated archive identity and input-handling checks. See [CHANGELOG.md](CHANGELOG.md).
+**Version note:** `v0.1.2` adds explicit Action artifact inputs and numeric version checks. Older `v0.1.0` and `v0.1.1` tags and assets were not modified. GitHub currently reports `immutable: false` for `v0.1.2`; do not infer platform-enforced immutability. See [CHANGELOG.md](CHANGELOG.md).
 
 **PyPI status:** a manual, trusted publishing workflow is prepared, but a PyPI release has **not been verified**. Maintainers can follow the [PyPI setup guide](docs/PYPI_PUBLISHING.md); do not assume `pip install dist-parity` is available until PyPI lists the project.
 
@@ -68,7 +68,7 @@ dist-parity --dist-dir dist --json
 
 `--dist-dir` accepts exactly one `.tar.gz` and one `.whl`. When you build multiple platform wheels, invoke once per wheel with `--sdist` and `--wheel`.
 
-**Action support for multi-wheel builds (unreleased `main` only):** the composite Action now also accepts `sdist` and `wheel` inputs together, overriding `dist-dir`, so a build with multiple wheels can select each pair without moving files. Supplying just one input fails with exit 2. **The published `v0.1.1` Action does not yet support these new inputs**; use its existing `dist-dir` input until a newer tagged release is independently verified.
+**Action support for multi-wheel builds (`v0.1.2`):** the published composite Action accepts `sdist` and `wheel` inputs together, overriding `dist-dir`, so a build with multiple wheels can select each pair without moving files. Supplying just one input fails with exit 2. Invoke the Action once per intended wheel. The older `v0.1.1` tag supports `dist-dir` only.
 
 ## 30-second synthetic demonstration
 
@@ -96,12 +96,12 @@ This is a maintainer-authored demonstration, **not** third-party adoption.
     python-version: '3.11'
 - run: python -m pip install build
 - run: python -m build
-- uses: swiast/dist-parity@v0.1.1
+- uses: swiast/dist-parity@v0.1.2
   with:
     dist-dir: dist
 ```
 
-Use this snippet **inside a job** that builds a Python distribution from its own source. The `swiast/dist-parity@v0.1.1` tag is published in [GitHub Releases](https://github.com/swiast/dist-parity/releases/tag/v0.1.1). For local development, set `PYTHONPATH=src` and run `python -m dist_parity --dist-dir dist`.
+Use this snippet **inside a job** that builds a Python distribution from its own source. The `swiast/dist-parity@v0.1.2` tag is published in [GitHub Releases](https://github.com/swiast/dist-parity/releases/tag/v0.1.2). For local development, set `PYTHONPATH=src` and run `python -m dist_parity --dist-dir dist`.
 
 ## Exit codes
 
@@ -139,7 +139,7 @@ Contributions: [CONTRIBUTING.md](CONTRIBUTING.md). Security: [SECURITY.md](SECUR
 ## Evidence, limitations, and review
 
 - [Reproducible maintainer validation, limitations, and complementary tools](docs/VALIDATION.md)
-- [Published v0.1.1 wheel installation and tagged Action smoke verification](docs/RELEASE_VALIDATION.md)
+- [Published v0.1.2 wheel installation and tagged Action smoke verification](docs/RELEASE_VALIDATION.md)
 - [Request for independent review and reproducible bug reports](docs/REVIEW_REQUEST.md)
 - [GitHub discovery, Marketplace publication readiness and adoption evidence levels](docs/DISCOVERABILITY.md)
 - [Open investigation of packaging 25.0 metadata mismatch](https://github.com/swiast/dist-parity/issues/1)

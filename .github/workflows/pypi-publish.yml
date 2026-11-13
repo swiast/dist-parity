@@ -1,4 +1,4 @@
-name: Publish v0.1.1 to PyPI (manual)
+name: Publish v0.1.2 to PyPI (manual)
 
 # Publishing never happens automatically on pushes, pull requests or GitHub releases.
 on:
@@ -17,20 +17,20 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - name: Download the exact GitHub v0.1.1 release artifacts
+      - name: Download the exact GitHub v0.1.2 release artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
-          gh release download v0.1.1 --repo swiast/dist-parity --dir dist \
-            --pattern 'dist_parity-0.1.1*'
+          gh release download v0.1.2 --repo swiast/dist-parity --dir dist \
+            --pattern 'dist_parity-0.1.2*'
           test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
           cd dist
           cat <<'CHECKSUMS' | sha256sum --check --strict
-          2d9664238562ea969d93713cc8f68a6f00943155b24f82813f54a6908cfd7488  dist_parity-0.1.1-py3-none-any.whl
-          12ff6f78b27bbd0fc8ca72d4754f4b970125ad1fd5a1807b763f3ef57ce7a548  dist_parity-0.1.1.tar.gz
+          f7404baf015ebea9a188764713839b5a0244d6237dfe46b12c5d2ff576f75aa1  dist_parity-0.1.2-py3-none-any.whl
+          40e61f0b8fdc9cb5a5e66fd3a561b7b314c744a9c431ecfc15cce89008d851da  dist_parity-0.1.2.tar.gz
           CHECKSUMS
 
       - name: Publish to PyPI with short-lived OIDC credentials

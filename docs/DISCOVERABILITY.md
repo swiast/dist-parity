@@ -1,6 +1,6 @@
 # Discoverability and independent adoption
 
-**Status (2026-11-14):** GitHub releases `v0.1.0` and `v0.1.1` exist, but
+**Status (2026-11-14):** GitHub releases `v0.1.0`, `v0.1.1` and `v0.1.2` exist, but
 the repository has no verified independent installation, downstream CI usage,
 or external feedback. A GitHub Marketplace listing and PyPI availability
 have **not** been verified. This is a preparation plan, not a report of adoption.
@@ -36,8 +36,9 @@ Publication still requires account-level operations and verification:
    to draft an **Action release**. Select **Publish this Action to the GitHub
    Marketplace** and resolve any validation warnings.
 4. Choose the closest supported primary category (e.g. code quality), review
-   release version and notes, and publish. The old `v0.1.0` and `v0.1.1`
-   tags are immutable and must not be rewritten. If GitHub cannot add the
+   release version and notes, and publish. The existing `v0.1.0`, `v0.1.1` and `v0.1.2`
+   tags and assets must not be rewritten. GitHub currently reports
+   `immutable: false` for `v0.1.2`; platform-level immutability is not established. If GitHub cannot add the
    Marketplace listing to an existing release, plan this for a **new,
    independently tested release**, rather than inventing a release version.
 5. Check that the resulting **Marketplace listing URL is public** and
