@@ -2,9 +2,14 @@
 
 ## Unreleased (main)
 
-- Allow the composite Action to select a specific `sdist`/`wheel` artifact pair in multi-wheel builds; require both inputs and preserve the existing `dist-dir` default. These Action inputs are not present in the published `v0.1.1` tag.
+- No changes yet.
+
+## 0.1.2 — release candidate
+
+- Add optional paired `sdist`/`wheel` inputs to the composite Action for multi-wheel build outputs; retain the existing `dist-dir` default.
 - Reject unambiguous numeric distribution-version conflicts between artifact filenames, archive directories and their respective metadata; retain equivalent trailing-zero release forms.
-- Keep the runtime dependency-free. Full PEP 440 version spelling normalization remains out of scope.
+- Remain runtime dependency-free; full PEP 440 version spelling normalization stays out of scope.
+- Expand maintainer regression coverage to 43 tests and validate on Python 3.11–3.13.
 
 ## 0.1.1 — maintenance release
 
