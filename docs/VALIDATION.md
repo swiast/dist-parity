@@ -4,8 +4,10 @@ This note records **maintainer-performed checks**, not independent adoption or a
 
 ## What has been verified
 
-- The `v0.1.0` release publishes a source archive and wheel: https://github.com/swiast/dist-parity/releases/tag/v0.1.0
+- Both the [`v0.1.0`](https://github.com/swiast/dist-parity/releases/tag/v0.1.0) and [`v0.1.1`](https://github.com/swiast/dist-parity/releases/tag/v0.1.1) GitHub releases publish source archives and wheels. GitHub release does **not** imply PyPI publication.
 - CI exercises the CLI and regression tests on Python 3.11–3.13: https://github.com/swiast/dist-parity/actions
+- The published **GitHub v0.1.1 wheel**, not a source checkout, installs and passes CLI/negative-control smoke on Python 3.11–3.13; the **tagged v0.1.1 composite Action** runs successfully on real-built release inputs: [main CI run 43484099851](https://github.com/swiast/dist-parity/actions/runs/43484099851), [test scope and SHA-256 inventory](RELEASE_VALIDATION.md). These are maintainer-run release-path tests, **not downstream integration/adoption**.
+- The [strict pinned backend integration workflow](../.github/workflows/integration.yml) now asserts `packaging==25.0` / `flit_core==3.12.0` exits **0/PASS** and the same sdist / `flit_core==4.2.0` exits **1** with exactly one `import-name` field mismatch. [Successful main run 43483660060](https://github.com/swiast/dist-parity/actions/runs/43483660060). This is an observed checker result, **not a confirmed upstream standards violation**.
 - A composite-action run validates a newly built set of the project's own distributions. The same workflow obtains the unrelated `packaging==25.0` sdist, builds a wheel from **that sdist**, and prints a parity diagnostic: https://github.com/swiast/dist-parity/actions/runs/43431651062
 - The `packaging==25.0` test reports a **mismatch**, not a successful parity check: the rebuilt wheel contains `Import-Name: packaging`, while the sdist omits it. The CI log records source Metadata-Version 2.4, wheel Metadata-Version 2.5, and no Dynamic field in either. [Issue #1](https://github.com/swiast/dist-parity/issues/1) tracks the remaining cross-version interpretation question; pinned backend provenance is now recorded. **Do not describe this as an upstream packaging defect**.
 
