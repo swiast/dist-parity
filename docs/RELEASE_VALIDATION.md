@@ -1,47 +1,32 @@
-# Released artifact installation and action smoke verification
+# Released artifact installation and tagged Action smoke verification
 
-This page describes **maintainer-operated release verification**, not external package
-adoption or production use.
+These checks are maintainer-operated, **not** third-party adoption or production usage.
 
-## What is tested
+## v0.1.2 release inventory
 
-The [GitHub Action workflow](../.github/workflows/release-smoke.yml) performs two
-independent release checks:
+- [GitHub release](https://github.com/swiast/dist-parity/releases/tag/v0.1.2), commit `74401c805508cfacab88e7c186c61ac5e6640001`.
+- Wheel `dist_parity-0.1.2-py3-none-any.whl`: SHA-256 `f7404baf015ebea9a188764713839b5a0244d6237dfe46b12c5d2ff576f75aa1`.
+- Sdist `dist_parity-0.1.2.tar.gz`: SHA-256 `40e61f0b8fdc9cb5a5e66fd3a561b7b314c744a9c431ecfc15cce89008d851da`.
+- A public `release-sha256.txt` also records both digests.
+- [Exact-head release CI 43525912471](https://github.com/swiast/dist-parity/actions/runs/43525912471) **SUCCESS**: tested Python 3.11–3.13, built the artifacts, published once, downloaded them, and compared their hashes.
+- [Exact-head integration CI 43525912427](https://github.com/swiast/dist-parity/actions/runs/43525912427) **SUCCESS**.
 
-1. On Python 3.11, 3.12, and 3.13, it downloads the **existing GitHub release**
-   `v0.1.1` wheel and source distribution. Before installing anything, it verifies
-   both files against the SHA-256 digests below, then installs the **released wheel**
-   (not a checkout or a locally rebuilt wheel), runs both CLI entry points,
-   checks package version 0.1.1, and executes the synthetic negative-control demo.
-2. In a separate job, it builds this repository's own distribution pair and uses
-   the **tagged** composite action `swiast/dist-parity@v0.1.1`, not the local
-   `uses: ./` development action.
+GitHub returned `immutable: false` for this release. No existing release tags or assets were rewritten. Platform-level immutability is **not** claimed.
 
-## Immutable release inventory
+## Tagged release verification
 
-- [GitHub release v0.1.1](https://github.com/swiast/dist-parity/releases/tag/v0.1.1)
-- Wheel: `dist_parity-0.1.1-py3-none-any.whl`
-  SHA-256 `2d9664238562ea969d93713cc8f68a6f00943155b24f82813f54a6908cfd7488`.
-- Sdist: `dist_parity-0.1.1.tar.gz`
-  SHA-256 `12ff6f78b27bbd0fc8ca72d4754f4b970125ad1fd5a1807b763f3ef57ce7a548`.
+The [release-smoke workflow](../.github/workflows/release-smoke.yml) is configured to:
 
-These digests come from the published GitHub release inventory. Workflow status
-is not evidence of a successful test until an actual run completes successfully.
+1. Download and verify fixed v0.1.2 release hashes, install the **published wheel** on Python 3.11, 3.12 and 3.13, run console/module CLIs, check version 0.1.2 and exercise the synthetic negative control.
+2. Run the **published** `swiast/dist-parity@v0.1.2` Action using default `dist-dir`, then with a specific `sdist`/`wheel` pair while a second wheel is present.
+3. Assert that supplying only one of `sdist` or `wheel` fails.
 
-## Verified public CI evidence
+A workflow definition is not itself evidence of a passing run; consult its public workflow results. No PyPI publication is triggered by this workflow.
 
-The [main-branch release smoke run #43484099851](https://github.com/swiast/dist-parity/actions/runs/43484099851) completed **successfully** on 2026-11-13:
-- Actual `v0.1.1` GitHub release wheel installed and its CLI/negative-control example passed on Python **3.11, 3.12 and 3.13**.
-- Tagged `swiast/dist-parity@v0.1.1` composite action passed against a newly built local distribution pair.
+## Historical v0.1.1 verification
 
-The run and release asset SHA-256 digests are independently inspectable on public GitHub. All tests were initiated and maintained by this repository's owner; do not interpret these outcomes as third-party use.
+[Smoke run 43484099851](https://github.com/swiast/dist-parity/actions/runs/43484099851) previously passed for the published v0.1.1 wheel across Python 3.11–3.13 and the tagged v0.1.1 Action. These historical bytes remain untouched.
 
-## Scope and cautions
+## Evidence boundaries
 
-- The test establishes installability and basic CLI/action functionality of the
-  **GitHub-released artifacts** under the specified environments.
-- It does not establish PyPI availability, independent users or downstream
-  integrations, artifact signatures, or full compliance with Python packaging
-  standards. The negative control is synthetic and maintainer-authored.
-- The workflow does not write to PyPI, upload packages, or modify external
-  repositories; it uses only public release assets and temporary CI workers.
+Passing owner CI is evidence of release-installability and the exact tested Action behavior, not independent usage, downloads, downstream adoption, PyPI publication, Marketplace listing, artifact signatures or full packaging standards compliance.
