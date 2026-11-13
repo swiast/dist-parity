@@ -1,0 +1,50 @@
+name: Integration verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/integration.yml'
+      - 'src/**'
+      - 'action.yml'
+      - 'pyproject.toml'
+  pull_request:
+    paths:
+      - '.github/workflows/integration.yml'
+      - 'src/**'
+      - 'action.yml'
+      - 'pyproject.toml'
+
+permissions:
+  contents: read
+
+jobs:
+  action-and-public-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build this project's distributions
+        run: |
+          python -m pip install -e .
+          python -m pip install build
+          python -m build
+      - name: Execute local composite action end-to-end
+        uses: ./
+        with:
+          dist-dir: dist
+      - name: Download public packaging sdist and build its wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p external
+          python -m pip download --no-deps --no-binary=:all: --dest external "packaging==25.0"
+          python -m pip wheel --no-deps --wheel-dir external external/packaging-25.0.tar.gz
+      - name: Verify real public-package metadata parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m dist_parity --sdist external/packaging-25.0.tar.gz --wheel external/packaging-25.0-*.whl
+          echo "Verified public packaging==25.0 sdist against a wheel freshly built from the same sdist." >> "$GITHUB_STEP_SUMMARY"
