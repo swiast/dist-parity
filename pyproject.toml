@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dist-parity"
-version = "0.1.0"
+version = "0.1.1"
 description = "Check PEP 643 metadata consistency between Python sdist and wheel artifacts"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -1,11 +1,11 @@
-## dist-parity 0.1.0
+## dist-parity 0.1.1
 
-Initial release of a read-only, dependency-free Python tool for comparing static metadata between a source distribution (`PKG-INFO`) and a wheel (`METADATA`), according to the Python Core Metadata specification.
+Maintenance release of a dependency-free, read-only Python metadata parity checker and GitHub Action.
 
-- Python 3.11+ CLI with human-readable and JSON outputs
-- GitHub composite action for package release workflows
-- Metadata 2.2+ `Dynamic` handling, including Metadata 2.6 multiple-use retention
-- Future Core Metadata minor versions warn; unsupported future major versions fail safely
-- Archive validation and automated regression tests (28 passing in local Python 3.13)
+- Reject distribution identity conflicts between sdist filename, sdist root directory and `PKG-INFO`, or wheel filename, `.dist-info` directory and `METADATA`.
+- Handle truncated gzip archives as structured CLI input errors rather than unhandled exceptions.
+- Read wheel metadata through a bounded stream to limit decompression memory consumption.
+- Expand local regression coverage to 38 tests; validate on Python 3.11, 3.12 and 3.13.
+- Keep stable human-readable/JSON results and exit status behavior.
 
-**Scope:** validates metadata consistency for wheels built from the corresponding sdist. It does not scan vulnerabilities or prove archive integrity.
+**Important limits:** This checks selected metadata consistency between a wheel and its corresponding sdist, not provenance, security, vulnerability absence or complete standards compliance. Cross-metadata-version interpretation remains under investigation. No third-party adoption or PyPI publication is claimed.

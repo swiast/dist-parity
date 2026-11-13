@@ -10,7 +10,7 @@
 - All non-`Dynamic` metadata fields match, for sdist metadata version 2.2+.
 - `Dynamic` multivalued fields preserve their source values as an unchanged prefix (new values appended) when the source metadata version is 2.6+; earlier versions allow broader changes.
 - Archives contain required metadata files; no suspicious traversal paths or duplicate wheel entries.
-- Archive distribution-name identity matches across sdist filename/root/PKG-INFO and wheel filename/.dist-info/METADATA (new on unreleased `main`).
+- Archive distribution-name identity matches across sdist filename/root/PKG-INFO and wheel filename/.dist-info/METADATA.
 - Unknown future minor Core Metadata versions trigger warnings; unsupported future major versions fail closed.
 - Machine-readable JSON is available for downstream CI tools.
 
@@ -29,10 +29,10 @@ python -m dist_parity --dist-dir dist
 Without cloning the source, you can install the tagged GitHub release directly (requires Git):
 
 ```bash
-python -m pip install "git+https://github.com/swiast/dist-parity.git@v0.1.0"
+python -m pip install "git+https://github.com/swiast/dist-parity.git@v0.1.1"
 ```
 
-**Version note:** The `v0.1.0` release is immutable. The latest `main` branch contains additional input-handling hardening and tests, which have not yet been included in a tagged release. See [CHANGELOG.md](CHANGELOG.md).
+**Version note:** The original `v0.1.0` release remains immutable. Version `v0.1.1` includes updated archive identity and input-handling checks. See [CHANGELOG.md](CHANGELOG.md).
 
 **PyPI status:** a manual, trusted publishing workflow is prepared, but a PyPI release has **not been verified**. Maintainers can follow the [PyPI setup guide](docs/PYPI_PUBLISHING.md); do not assume `pip install dist-parity` is available until PyPI lists the project.
 
@@ -71,12 +71,12 @@ This is a maintainer-authored demonstration, **not** third-party adoption.
     python-version: '3.11'
 - run: python -m pip install build
 - run: python -m build
-- uses: swiast/dist-parity@v0.1.0
+- uses: swiast/dist-parity@v0.1.1
   with:
     dist-dir: dist
 ```
 
-Use this snippet **inside a job** that builds a Python distribution from its own source. The `swiast/dist-parity@v0.1.0` tag is published in [GitHub Releases](https://github.com/swiast/dist-parity/releases/tag/v0.1.0). For local development, set `PYTHONPATH=src` and run `python -m dist_parity --dist-dir dist`.
+Use this snippet **inside a job** that builds a Python distribution from its own source. The `swiast/dist-parity@v0.1.1` tag is published in [GitHub Releases](https://github.com/swiast/dist-parity/releases/tag/v0.1.1). For local development, set `PYTHONPATH=src` and run `python -m dist_parity --dist-dir dist`.
 
 ## Exit codes
 
