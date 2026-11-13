@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased (main)
+
+- Reject unambiguous numeric distribution-version conflicts between artifact filenames, archive directories and their respective metadata; retain equivalent trailing-zero release forms.
+- Keep the runtime dependency-free. Full PEP 440 version spelling normalization remains out of scope.
+
 ## 0.1.1 — maintenance release
 
 - Reject conflicting package names across source archive filename/root metadata and wheel filename/.dist-info metadata; retain valid wheel build tags.

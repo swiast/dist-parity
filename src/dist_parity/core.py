@@ -58,14 +58,34 @@ class ArtifactError(ValueError):
     """Invalid, missing, ambiguous, or unsupported distribution archive."""
 
 
-def _name_from_stem(stem: str, kind: str) -> str:
-    """Read the distribution name from a name-version artifact component."""
+def _identity_from_stem(stem: str, kind: str) -> tuple[str, str]:
+    """Read the distribution name and version from an artifact component."""
     if "-" not in stem:
         raise ArtifactError(f"{kind}: expected normalized distribution-version name")
     name, version = stem.rsplit("-", 1)
     if not name or not version:
         raise ArtifactError(f"{kind}: missing distribution name or version")
-    return name
+    return name, version
+
+
+def _obvious_version_conflict(candidate: str, metadata_version: str) -> bool:
+    """Reject provable release-version conflicts without guessing PEP 440 aliases.
+
+    Numeric-only versions have unambiguous release segments; trailing zero
+    segments are equivalent (1.0 and 1.0.0). Complex PEP 440 spellings require
+    an external normalizer, so this focused, dependency-free check defers them.
+    """
+    numeric = r"[0-9]+(?:\.[0-9]+)*"
+    if not (re.fullmatch(numeric, candidate) and re.fullmatch(numeric, metadata_version)):
+        return False
+
+    def release(value: str) -> tuple[int, ...]:
+        parts = [int(part) for part in value.split(".")]
+        while len(parts) > 1 and parts[-1] == 0:
+            parts.pop()
+        return tuple(parts)
+
+    return release(candidate) != release(metadata_version)
 
 
 def _name_matches_metadata(candidate: str, name: str) -> bool:
@@ -135,12 +155,17 @@ def _sdist_metadata(path: Path) -> dict[str, list[str]]:
                 raise ArtifactError("sdist: PKG-INFO is unreadable")
             metadata = _decode_metadata(stream.read(MAX_METADATA_BYTES + 1), meta_name)
             expected = metadata["name"][0]
-            file_name = _name_from_stem(path.name[:-7], "sdist filename")
-            root_name = _name_from_stem(root, "sdist root directory")
+            file_name, file_version = _identity_from_stem(path.name[:-7], "sdist filename")
+            root_name, root_version = _identity_from_stem(root, "sdist root directory")
             if not _name_matches_metadata(file_name, expected):
                 raise ArtifactError("sdist filename distribution name differs from PKG-INFO Name")
             if not _name_matches_metadata(root_name, expected):
                 raise ArtifactError("sdist root directory distribution name differs from PKG-INFO Name")
+            version = metadata["version"][0]
+            if _obvious_version_conflict(file_version, version):
+                raise ArtifactError("sdist filename distribution version differs from PKG-INFO Version")
+            if _obvious_version_conflict(root_version, version):
+                raise ArtifactError("sdist root directory distribution version differs from PKG-INFO Version")
             return metadata
     except (OSError, tarfile.TarError, EOFError) as exc:
         raise ArtifactError(f"could not read sdist {path}: {exc}") from exc
@@ -183,12 +208,19 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
             wheel_parts = path.name[:-4].split("-")
             if len(wheel_parts) not in (5, 6) or not all(wheel_parts):
                 raise ArtifactError("wheel filename: expected distribution-version[-build]-python-abi-platform.whl")
-            wheel_name = wheel_parts[0]
-            dist_info_name = _name_from_stem(base.removesuffix(".dist-info"), "wheel dist-info directory")
+            wheel_name, wheel_version = wheel_parts[:2]
+            dist_info_name, dist_info_version = _identity_from_stem(
+                base.removesuffix(".dist-info"), "wheel dist-info directory"
+            )
             if not _name_matches_metadata(wheel_name, expected):
                 raise ArtifactError("wheel filename distribution name differs from METADATA Name")
             if not _name_matches_metadata(dist_info_name, expected):
                 raise ArtifactError("wheel dist-info directory distribution name differs from METADATA Name")
+            version = metadata["version"][0]
+            if _obvious_version_conflict(wheel_version, version):
+                raise ArtifactError("wheel filename distribution version differs from METADATA Version")
+            if _obvious_version_conflict(dist_info_version, version):
+                raise ArtifactError("wheel dist-info directory distribution version differs from METADATA Version")
             return metadata
     except (OSError, zipfile.BadZipFile, RuntimeError, EOFError, zlib.error) as exc:
         raise ArtifactError(f"could not read wheel {path}: {exc}") from exc

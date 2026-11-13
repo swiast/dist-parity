@@ -113,6 +113,45 @@ class CheckTests(unittest.TestCase):
         with self.assertRaisesRegex(ArtifactError, "wheel dist-info directory distribution name differs"):
             compare(s, w)
 
+    def test_sdist_filename_version_conflict(self):
+        s, w = make_pair(self.base)
+        s = s.rename(self.base / "sample_pkg-2.0.tar.gz")
+        with self.assertRaisesRegex(ArtifactError, "sdist filename distribution version differs"):
+            compare(s, w)
+
+    def test_sdist_root_version_conflict(self):
+        s, w = make_pair(self.base)
+        with tarfile.open(s, "r:gz") as archive:
+            members = [(m.name, archive.extractfile(m).read()) for m in archive.getmembers()]
+        with tarfile.open(s, "w:gz") as archive:
+            for name, data in members:
+                info = tarfile.TarInfo(name.replace("sample_pkg-1.0/", "sample_pkg-2.0/"))
+                info.size = len(data)
+                archive.addfile(info, io.BytesIO(data))
+        with self.assertRaisesRegex(ArtifactError, "sdist root directory distribution version differs"):
+            compare(s, w)
+
+    def test_wheel_filename_version_conflict(self):
+        s, w = make_pair(self.base)
+        w = w.rename(self.base / "sample_pkg-2.0-py3-none-any.whl")
+        with self.assertRaisesRegex(ArtifactError, "wheel filename distribution version differs"):
+            compare(s, w)
+
+    def test_wheel_dist_info_version_conflict(self):
+        s, w = make_pair(self.base)
+        with zipfile.ZipFile(w, "w") as archive:
+            archive.writestr("sample_pkg-2.0.dist-info/METADATA", meta())
+            archive.writestr("sample_pkg-2.0.dist-info/WHEEL", "Wheel-Version: 1.0\\n")
+            archive.writestr("sample_pkg-2.0.dist-info/RECORD", "")
+        with self.assertRaisesRegex(ArtifactError, "wheel dist-info directory distribution version differs"):
+            compare(s, w)
+
+    def test_equivalent_numeric_release_versions_remain_valid(self):
+        s, w = make_pair(self.base)
+        s = s.rename(self.base / "sample_pkg-1.0.0.tar.gz")
+        w = w.rename(self.base / "sample_pkg-1.0.0-py3-none-any.whl")
+        self.assertTrue(compare(s, w).ok)
+
     def test_wheel_build_tag_accepted(self):
         s, w = make_pair(self.base)
         w = w.rename(self.base / "sample_pkg-1.0-1-py3-none-any.whl")

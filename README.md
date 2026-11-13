@@ -33,6 +33,7 @@ Please do not post proprietary archives, private names, tokens, or credentials.
 - `Dynamic` multivalued fields preserve their source values as an unchanged prefix (new values appended) when the source metadata version is 2.6+; earlier versions allow broader changes.
 - Archives contain required metadata files; no suspicious traversal paths or duplicate wheel entries.
 - Archive distribution-name identity matches across sdist filename/root/PKG-INFO and wheel filename/.dist-info/METADATA.
+- On unreleased `main`, obviously conflicting numeric release versions in filenames/archive directories are rejected without treating equivalent forms such as `1.0` and `1.0.0` as different.
 - Unknown future minor Core Metadata versions trigger warnings; unsupported future major versions fail closed.
 - Machine-readable JSON is available for downstream CI tools.
 
