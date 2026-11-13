@@ -3,6 +3,7 @@
 ## Unreleased (main)
 
 - Handle truncated gzip sdists as structured input errors (CLI exit status 2), not uncaught EOF exceptions.
+- Reject archive distribution-name identity conflicts between source filename/root/PKG-INFO and wheel filename/.dist-info/METADATA; preserve valid wheel build tags.
 - Read wheel `METADATA` through a size-bounded stream, even if archive headers are misleading.
 - Add regression coverage for truncated sdists, bounded wheel metadata reads and oversized metadata.
 - These changes are on `main` only; the immutable `v0.1.0` tag and its existing release assets are unchanged.
