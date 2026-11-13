@@ -40,7 +40,7 @@ jobs:
       - run: python -m pip install --upgrade build
       - run: python -m build
       - run: PYTHONPATH=src python -m dist_parity --dist-dir dist
-      - name: Create immutable v0.1.2 release and verify downloaded assets
+      - name: Create versioned v0.1.2 release and verify downloaded assets
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
