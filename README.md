@@ -34,7 +34,7 @@ dist-parity --dist-dir dist --json
 
 `--dist-dir` accepts exactly one `.tar.gz` and one `.whl`. When you build multiple platform wheels, invoke once per wheel with `--sdist` and `--wheel`.
 
-## GitHub Actions (published v0.1.0)
+## GitHub Actions
 
 ```yaml
 - uses: actions/checkout@v4
