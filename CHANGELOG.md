@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Allow the composite Action to select a specific `sdist`/`wheel` artifact pair in multi-wheel builds; require both inputs and preserve the existing `dist-dir` default. These Action inputs are not present in the published `v0.1.1` tag.
 - Reject unambiguous numeric distribution-version conflicts between artifact filenames, archive directories and their respective metadata; retain equivalent trailing-zero release forms.
 - Keep the runtime dependency-free. Full PEP 440 version spelling normalization remains out of scope.
 

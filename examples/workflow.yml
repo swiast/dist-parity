@@ -13,7 +13,9 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install build
       - run: python -m build
-      # After the project is published and tagged:
+      # Published v0.1.1 supports one sdist/wheel pair via dist-dir.
+      # Unreleased main adds explicit sdist and wheel Action inputs for multi-wheel builds;
+      # wait for a verified newer tag before using those new inputs in production.
       - uses: swiast/dist-parity@v0.1.1
         with:
           dist-dir: dist

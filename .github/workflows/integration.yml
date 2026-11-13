@@ -35,6 +35,36 @@ jobs:
         uses: ./
         with:
           dist-dir: dist
+      - name: Prepare multi-wheel regression fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdist="$(find dist -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          wheel="$(find dist -maxdepth 1 -type f -name '*.whl' -print -quit)"
+          test -n "$sdist" && test -n "$wheel"
+          cp "$wheel" dist/ignored-0.0-py3-none-any.whl
+          status=0
+          python -m dist_parity --dist-dir dist >/dev/null 2>&1 || status=$?
+          if [[ "$status" -ne 2 ]]; then
+            echo "Expected ambiguous dist-dir to exit 2; got $status" >&2
+            exit 1
+          fi
+          printf 'CHECK_SDIST=%s\nCHECK_WHEEL=%s\n' "$sdist" "$wheel" >> "$GITHUB_ENV"
+      - name: Verify explicit artifacts work with multiple wheels present
+        uses: ./
+        with:
+          sdist: ${{ env.CHECK_SDIST }}
+          wheel: ${{ env.CHECK_WHEEL }}
+      - name: Reject incomplete Action artifact pair
+        id: incomplete_pair
+        continue-on-error: true
+        uses: ./
+        with:
+          sdist: ${{ env.CHECK_SDIST }}
+      - name: Assert incomplete pair failed
+        if: always()
+        shell: bash
+        run: test "${{ steps.incomplete_pair.outcome }}" = "failure"
       - name: Download public packaging sdist and build its wheel
         shell: bash
         run: |

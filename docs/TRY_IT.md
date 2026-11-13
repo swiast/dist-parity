@@ -36,6 +36,10 @@ For a Python package's existing build job, the
 [tagged Action example](../examples/workflow.yml) can be copied into
 your workflow. Use a wheel built from the corresponding source distribution,
 and ensure the distribution directory contains only one sdist/wheel pair.
+The published `v0.1.1` Action only offers `dist-dir`. The unreleased `main`
+Action also accepts **both** `sdist` and `wheel` input paths, selecting a
+specific pair from a directory with multiple wheels. This is not available
+in the released tag yet; do not assume the new inputs work with `@v0.1.1`.
 
 ## Please tell us what happened
 
