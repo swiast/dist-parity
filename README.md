@@ -31,6 +31,8 @@ Without cloning the source, you can install the tagged GitHub release directly (
 python -m pip install "git+https://github.com/swiast/dist-parity.git@v0.1.0"
 ```
 
+**Version note:** The `v0.1.0` release is immutable. The latest `main` branch contains additional input-handling hardening and tests, which have not yet been included in a tagged release. See [CHANGELOG.md](CHANGELOG.md).
+
 **PyPI status:** a manual, trusted publishing workflow is prepared, but a PyPI release has **not been verified**. Maintainers can follow the [PyPI setup guide](docs/PYPI_PUBLISHING.md); do not assume `pip install dist-parity` is available until PyPI lists the project.
 
 Or install the checker in one environment and run it against explicit artifacts:
