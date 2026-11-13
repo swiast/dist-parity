@@ -28,6 +28,14 @@ independent release checks:
 These digests come from the published GitHub release inventory. Workflow status
 is not evidence of a successful test until an actual run completes successfully.
 
+## Verified public CI evidence
+
+The [main-branch release smoke run #43484099851](https://github.com/swiast/dist-parity/actions/runs/43484099851) completed **successfully** on 2026-11-13:
+- Actual `v0.1.1` GitHub release wheel installed and its CLI/negative-control example passed on Python **3.11, 3.12 and 3.13**.
+- Tagged `swiast/dist-parity@v0.1.1` composite action passed against a newly built local distribution pair.
+
+The run and release asset SHA-256 digests are independently inspectable on public GitHub. All tests were initiated and maintained by this repository's owner; do not interpret these outcomes as third-party use.
+
 ## Scope and cautions
 
 - The test establishes installability and basic CLI/action functionality of the
