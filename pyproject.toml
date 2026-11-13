@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dist-parity"
+version = "0.1.0"
+description = "Check PEP 643 metadata consistency between Python sdist and wheel artifacts"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "swiast" }]
+keywords = ["python", "packaging", "sdist", "wheel", "metadata", "PEP 643"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.scripts]
+dist-parity = "dist_parity.cli:main"
+
+[project.urls]
+Repository = "https://github.com/swiast/dist-parity"
+Issues = "https://github.com/swiast/dist-parity/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]

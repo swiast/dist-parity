@@ -1,0 +1,20 @@
+name: 'dist-parity'
+description: 'Check Python sdist/wheel core metadata consistency before publishing'
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+inputs:
+  dist-dir:
+    description: 'Folder containing exactly one sdist and wheel'
+    required: false
+    default: 'dist'
+runs:
+  using: 'composite'
+  steps:
+    - name: Check package metadata parity
+      shell: bash
+      env:
+        DIST_PARITY_ACTION_PATH: ${{ github.action_path }}
+        DIST_PARITY_DIST_DIR: ${{ inputs['dist-dir'] }}
+      run: |
+        PYTHONPATH="$DIST_PARITY_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}" python -m dist_parity --dist-dir "$DIST_PARITY_DIST_DIR"

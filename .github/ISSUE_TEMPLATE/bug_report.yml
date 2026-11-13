@@ -1,0 +1,30 @@
+name: Bug report
+description: Report a reproducible metadata comparison problem
+labels: ['bug']
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Actual behavior
+      description: Paste sanitized output (remove private package names/secrets).
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproducible metadata example
+      description: Prefer synthetic PKG-INFO/METADATA values to proprietary artifacts.
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version and platform
+    validations:
+      required: true
