@@ -1,12 +1,12 @@
 # Changelog
 
-## Unreleased (main)
+## 0.1.1 — maintenance release
 
-- Handle truncated gzip sdists as structured input errors (CLI exit status 2), not uncaught EOF exceptions.
-- Reject archive distribution-name identity conflicts between source filename/root/PKG-INFO and wheel filename/.dist-info/METADATA; preserve valid wheel build tags.
-- Read wheel `METADATA` through a size-bounded stream, even if archive headers are misleading.
-- Add regression coverage for truncated sdists, bounded wheel metadata reads and oversized metadata.
-- These changes are on `main` only; the immutable `v0.1.0` tag and its existing release assets are unchanged.
+- Reject conflicting package names across source archive filename/root metadata and wheel filename/.dist-info metadata; retain valid wheel build tags.
+- Handle truncated gzip sdists as structured input errors (exit status 2).
+- Read wheel metadata through a size-bounded stream, protecting against misleading ZIP headers.
+- Add regression tests and verify metadata package version consistency in CI.
+- The `v0.1.0` release tag and its assets remain unchanged.
 
 ## 0.1.0 — released 2026-11-13
 
@@ -17,4 +17,4 @@
 
 Release: https://github.com/swiast/dist-parity/releases/tag/v0.1.0
 
-**Distribution note:** A GitHub release is verified; PyPI publication has not been independently verified.
+**Distribution note:** GitHub releases are separate from PyPI; PyPI publication has not been independently verified.
