@@ -68,6 +68,8 @@ dist-parity --dist-dir dist --json
 
 `--dist-dir` accepts exactly one `.tar.gz` and one `.whl`. When you build multiple platform wheels, invoke once per wheel with `--sdist` and `--wheel`.
 
+**Action support for multi-wheel builds (unreleased `main` only):** the composite Action now also accepts `sdist` and `wheel` inputs together, overriding `dist-dir`, so a build with multiple wheels can select each pair without moving files. Supplying just one input fails with exit 2. **The published `v0.1.1` Action does not yet support these new inputs**; use its existing `dist-dir` input until a newer tagged release is independently verified.
+
 ## 30-second synthetic demonstration
 
 No package registry or private artifacts are required. After installing the project

@@ -8,6 +8,14 @@ inputs:
     description: 'Folder containing exactly one sdist and wheel'
     required: false
     default: 'dist'
+  sdist:
+    description: 'Explicit source distribution (.tar.gz); requires wheel, overrides dist-dir'
+    required: false
+    default: ''
+  wheel:
+    description: 'Explicit wheel (.whl); requires sdist, overrides dist-dir'
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -16,5 +24,16 @@ runs:
       env:
         DIST_PARITY_ACTION_PATH: ${{ github.action_path }}
         DIST_PARITY_DIST_DIR: ${{ inputs['dist-dir'] }}
+        DIST_PARITY_SDIST: ${{ inputs['sdist'] }}
+        DIST_PARITY_WHEEL: ${{ inputs['wheel'] }}
       run: |
-        PYTHONPATH="$DIST_PARITY_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}" python -m dist_parity --dist-dir "$DIST_PARITY_DIST_DIR"
+        set -euo pipefail
+        if [[ -n "$DIST_PARITY_SDIST" || -n "$DIST_PARITY_WHEEL" ]]; then
+          if [[ -z "$DIST_PARITY_SDIST" || -z "$DIST_PARITY_WHEEL" ]]; then
+            echo 'dist-parity: sdist and wheel action inputs must be provided together' >&2
+            exit 2
+          fi
+          PYTHONPATH="$DIST_PARITY_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}" python -m dist_parity --sdist "$DIST_PARITY_SDIST" --wheel "$DIST_PARITY_WHEEL"
+        else
+          PYTHONPATH="$DIST_PARITY_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}" python -m dist_parity --dist-dir "$DIST_PARITY_DIST_DIR"
+        fi
