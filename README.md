@@ -4,6 +4,8 @@
 
 `dist-parity` compares `PKG-INFO` in a Python source distribution (`sdist`) with `METADATA` inside its wheel, implementing the [Core Metadata](https://packaging.python.org/en/latest/specifications/core-metadata/) consistency relationship from [PEP 643](https://peps.python.org/pep-0643/). It is a dependency-free, read-only Python 3.11+ CLI and GitHub composite action.
 
+**Independent package-maintainer feedback wanted:** [review the tested v0.1.2 release or try it on your own sdist/wheel build](https://github.com/swiast/dist-parity/issues/7). Documentation-only and negative reviews are welcome; no stars, endorsements, or private artifacts requested. Owner-operated tests are not third-party use.
+
 ## Try it on your project (GitHub release; PyPI not required)
 
 Install the **published v0.1.2 wheel** directly, without cloning or a PyPI account:
