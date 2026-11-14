@@ -79,9 +79,11 @@ def _obvious_version_conflict(candidate: str, metadata_version: str) -> bool:
     if not (re.fullmatch(numeric, candidate) and re.fullmatch(numeric, metadata_version)):
         return False
 
-    def release(value: str) -> tuple[int, ...]:
-        parts = [int(part) for part in value.split(".")]
-        while len(parts) > 1 and parts[-1] == 0:
+    def release(value: str) -> tuple[str, ...]:
+        # Compare normalized decimal segments as strings: int() can raise
+        # ValueError on untrusted, very long numeric version components.
+        parts = [part.lstrip("0") or "0" for part in value.split(".")]
+        while len(parts) > 1 and parts[-1] == "0":
             parts.pop()
         return tuple(parts)
 
@@ -230,7 +232,14 @@ def _version_pair(text: str) -> tuple[int, int]:
     match = re.fullmatch(r"(\d+)\.(\d+)", text.strip())
     if not match:
         raise ArtifactError(f"unrecognized Metadata-Version: {text!r}")
-    major, minor = int(match.group(1)), int(match.group(2))
+    # Trim leading zeros before int conversion and bound the remaining digits.
+    # A malformed multi-thousand-digit Metadata-Version must yield ArtifactError,
+    # rather than Python's integer-conversion ValueError escaping the CLI.
+    major_text = match.group(1).lstrip("0") or "0"
+    minor_text = match.group(2).lstrip("0") or "0"
+    if len(major_text) > 6 or len(minor_text) > 6:
+        raise ArtifactError("Metadata-Version numeric components exceed supported range")
+    major, minor = int(major_text), int(minor_text)
     if major > SUPPORTED_METADATA_MAJOR:
         raise ArtifactError(
             f"unsupported Metadata-Version major {major} (supports {SUPPORTED_METADATA_MAJOR}.x): {text!r}"
