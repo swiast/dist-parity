@@ -113,6 +113,20 @@ Use this snippet **inside a job** that builds a Python distribution from its own
 | `1` | Metadata inconsistency found |
 | `2` | Invalid or ambiguous input artifacts |
 
+### Machine-readable JSON and exit codes
+
+Pass `--json` for a single JSON object on standard output, including
+command-line argument failures (for example, `--sdist` without `--wheel`)
+and malformed archives. Exit codes remain `0` for parity, `1` for a
+metadata mismatch and `2` for invalid inputs.
+
+On a completed comparison the object contains `sdist`, `wheel`,
+`project`, `version`, `ok`, and `findings`. Each finding includes
+`code`, `severity`, `message`, and `field`. Invalid arguments or
+archives produce `{"ok": false, "error": "...", "findings": []}`;
+`--help` intentionally retains normal human-readable argparse output.
+Do not infer third-party usage from maintainer CI alone.
+
 ## Example mismatch
 
 ```text

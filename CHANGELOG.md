@@ -2,6 +2,10 @@
 
 ## Unreleased (main)
 
+- Make `--json` produce structured exit-2 errors for invalid command-line arguments, without changing human-readable argparse errors.
+- Avoid Python integer-conversion crashes on untrusted, extremely long numeric version components and reject oversized Core Metadata version components cleanly.
+- Add five maintainer-authored regression tests for CLI errors and oversized version handling; not evidence of external adoption.
+
 - Add an opt-in public-package Flit comparison reproducer with fixed PyPI artifact SHA-256 pins and no-network synthetic self-tests. The optional `--execute` path intentionally runs third-party build backends in a temporary virtual environment; it is not part of the released v0.1.2 tag and is not evidence of independent adoption.
 
 ## 0.1.2 — release candidate
