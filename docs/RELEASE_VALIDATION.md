@@ -17,11 +17,11 @@ GitHub returned `immutable: false` for this release. No existing release tags or
 
 The [release-smoke workflow](../.github/workflows/release-smoke.yml) is configured to:
 
-1. Download and verify fixed v0.1.2 release hashes, install the **published wheel** on Python 3.11, 3.12 and 3.13, run console/module CLIs, check version 0.1.2 and exercise the synthetic negative control.
+1. Download and verify fixed v0.1.2 release hashes, install the **published wheel** on Python 3.11, 3.12, 3.13 and 3.14, run console/module CLIs, check version 0.1.2 and exercise the synthetic negative control.
 2. Run the **published** `swiast/dist-parity@v0.1.2` Action using default `dist-dir`, then with a specific `sdist`/`wheel` pair while a second wheel is present.
 3. Assert that supplying only one of `sdist` or `wheel` fails.
 
-A workflow definition is not itself evidence of a passing run; consult its public workflow results. No PyPI publication is triggered by this workflow.
+The expanded Python 3.14 verification applies to new workflow runs, not to the historical 2026-11-13 release CI. A workflow definition is not itself evidence of a passing run; consult its public workflow results. No PyPI publication is triggered by this workflow.
 
 ## Historical v0.1.1 verification
 
