@@ -7,12 +7,12 @@ import tarfile
 import tempfile
 import unittest
 import zipfile
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 from pathlib import Path
 
 from dist_parity.cli import main
-from dist_parity.core import ArtifactError, compare, locate_distributions
+from dist_parity.core import ArtifactError, compare, locate_distributions, _obvious_version_conflict, _version_pair
 
 
 def meta(name="sample-pkg", version="1.0", meta_version="2.6", **fields):
@@ -372,6 +372,66 @@ class CheckTests(unittest.TestCase):
             status = main(["--dist-dir", str(self.base), "--json"])
         self.assertEqual(status, 2)
         self.assertIn("expected exactly one", json.loads(output.getvalue())["error"])
+
+
+    def test_json_missing_paired_artifact_arguments(self):
+        for argv in (
+            ["--json", "--sdist", "source.tar.gz"],
+            ["--wheel", "wheel.whl", "--json"],
+            ["--sdist", "source.tar.gz", "--json"],
+        ):
+            with self.subTest(argv=argv):
+                output, errors = io.StringIO(), io.StringIO()
+                with redirect_stdout(output), redirect_stderr(errors):
+                    status = main(argv)
+                self.assertEqual(status, 2)
+                self.assertEqual(errors.getvalue(), "")
+                payload = json.loads(output.getvalue())
+                self.assertFalse(payload["ok"])
+                self.assertEqual(payload["findings"], [])
+                self.assertIn("--sdist and --wheel", payload["error"])
+
+    def test_json_invalid_argument_and_exclusive_options(self):
+        for argv in (
+            ["--json", "--unknown"],
+            ["--json", "--dist-dir", "dist", "--sdist", "source.tar.gz", "--wheel", "wheel.whl"],
+        ):
+            with self.subTest(argv=argv):
+                output, errors = io.StringIO(), io.StringIO()
+                with redirect_stdout(output), redirect_stderr(errors):
+                    status = main(argv)
+                self.assertEqual(status, 2)
+                self.assertEqual(errors.getvalue(), "")
+                payload = json.loads(output.getvalue())
+                self.assertFalse(payload["ok"])
+                self.assertTrue(payload["error"])
+
+    def test_plain_invalid_arguments_preserve_argparse_exit(self):
+        errors = io.StringIO()
+        with redirect_stderr(errors), self.assertRaises(SystemExit) as context:
+            main(["--sdist", "source.tar.gz"])
+        self.assertEqual(context.exception.code, 2)
+        self.assertIn("usage:", errors.getvalue())
+
+    def test_very_long_numeric_release_components_are_safe(self):
+        giant = "9" * 5000
+        self.assertFalse(_obvious_version_conflict(giant, giant))
+        self.assertTrue(_obvious_version_conflict(giant, "8" * 5000))
+        self.assertFalse(_obvious_version_conflict("0" * 5000 + "1.0", "1"))
+        self.assertTrue(_obvious_version_conflict("0" * 5000 + "1.0", "2"))
+
+    def test_oversized_core_metadata_version_is_a_structured_error(self):
+        s, w = make_pair(self.base, sdict={"meta_version": "2." + "9" * 5000})
+        output, errors = io.StringIO(), io.StringIO()
+        with redirect_stdout(output), redirect_stderr(errors):
+            status = main(["--sdist", str(s), "--wheel", str(w), "--json"])
+        self.assertEqual(status, 2)
+        self.assertEqual(errors.getvalue(), "")
+        payload = json.loads(output.getvalue())
+        self.assertFalse(payload["ok"])
+        self.assertIn("Metadata-Version numeric components", payload["error"])
+        with self.assertRaisesRegex(ArtifactError, "numeric components"):
+            _version_pair("2." + "9" * 5000)
 
 
 if __name__ == "__main__":
