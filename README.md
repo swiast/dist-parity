@@ -145,6 +145,7 @@ Contributions: [CONTRIBUTING.md](CONTRIBUTING.md). Security: [SECURITY.md](SECUR
 - [Request for independent review and reproducible bug reports](docs/REVIEW_REQUEST.md)
 - [GitHub discovery, Marketplace publication readiness and adoption evidence levels](docs/DISCOVERABILITY.md)
 - [Open investigation of packaging 25.0 metadata mismatch](https://github.com/swiast/dist-parity/issues/1)
+- [Opt-in, hash-pinned reproducibility script for a real public-package case](examples/reproduce_flit_case.py) — safe `--dry-run` / `--self-test` by default; third-party code only with `--execute`
 
 Self-authored tests, issues and build logs are not evidence of third-party adoption. Independent use has not yet been established.
 

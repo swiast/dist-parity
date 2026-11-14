@@ -2,7 +2,7 @@
 
 ## Unreleased (main)
 
-- No changes yet.
+- Add an opt-in public-package Flit comparison reproducer with fixed PyPI artifact SHA-256 pins and no-network synthetic self-tests. The optional `--execute` path intentionally runs third-party build backends in a temporary virtual environment; it is not part of the released v0.1.2 tag and is not evidence of independent adoption.
 
 ## 0.1.2 — release candidate
 

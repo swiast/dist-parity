@@ -4,9 +4,9 @@ This note records **maintainer-performed checks**, not independent adoption or a
 
 ## What has been verified
 
-- Both the [`v0.1.0`](https://github.com/swiast/dist-parity/releases/tag/v0.1.0) and [`v0.1.1`](https://github.com/swiast/dist-parity/releases/tag/v0.1.1) GitHub releases publish source archives and wheels. GitHub release does **not** imply PyPI publication.
+- GitHub releases [`v0.1.0`](https://github.com/swiast/dist-parity/releases/tag/v0.1.0), [`v0.1.1`](https://github.com/swiast/dist-parity/releases/tag/v0.1.1) and [`v0.1.2`](https://github.com/swiast/dist-parity/releases/tag/v0.1.2) publish source archives and wheels. GitHub release does **not** imply PyPI publication.
 - CI exercises the CLI and regression tests on Python 3.11–3.13: https://github.com/swiast/dist-parity/actions
-- The published **GitHub v0.1.1 wheel**, not a source checkout, installs and passes CLI/negative-control smoke on Python 3.11–3.13; the **tagged v0.1.1 composite Action** runs successfully on real-built release inputs: [main CI run 43484099851](https://github.com/swiast/dist-parity/actions/runs/43484099851), [test scope and SHA-256 inventory](RELEASE_VALIDATION.md). These are maintainer-run release-path tests, **not downstream integration/adoption**.
+- The published **GitHub v0.1.2 wheel**, not a source checkout, installs and passes CLI/negative-control smoke on Python 3.11–3.13; the **tagged v0.1.2 composite Action** runs in `dist-dir` and explicit-pair modes: [main smoke 43526621326](https://github.com/swiast/dist-parity/actions/runs/43526621326), [test scope and SHA-256 inventory](RELEASE_VALIDATION.md). These are maintainer-run release-path tests, **not downstream integration/adoption**.
 - The [strict pinned backend integration workflow](../.github/workflows/integration.yml) now asserts `packaging==25.0` / `flit_core==3.12.0` exits **0/PASS** and the same sdist / `flit_core==4.2.0` exits **1** with exactly one `import-name` field mismatch. [Successful main run 43483660060](https://github.com/swiast/dist-parity/actions/runs/43483660060). This is an observed checker result, **not a confirmed upstream standards violation**.
 - A composite-action run validates a newly built set of the project's own distributions. The same workflow obtains the unrelated `packaging==25.0` sdist, builds a wheel from **that sdist**, and prints a parity diagnostic: https://github.com/swiast/dist-parity/actions/runs/43431651062
 - The `packaging==25.0` test reports a **mismatch**, not a successful parity check: the rebuilt wheel contains `Import-Name: packaging`, while the sdist omits it. The CI log records source Metadata-Version 2.4, wheel Metadata-Version 2.5, and no Dynamic field in either. [Issue #1](https://github.com/swiast/dist-parity/issues/1) tracks the remaining cross-version interpretation question; pinned backend provenance is now recorded. **Do not describe this as an upstream packaging defect**.
@@ -25,6 +25,20 @@ The same published `packaging==25.0` source distribution yields different metada
 
 **Upstream discussion status (2026-11-13):** [pypa/flit#845](https://github.com/pypa/flit/issues/845) was **closed**. A Flit maintainer explained that building a wheel from an sdist generates metadata anew rather than reading the sdist's `PKG-INFO`. That explains how a backend-version-dependent metadata difference can arise; it is **not** an endorsement, independent use, or a determination that this checker is compliant or that Flit is defective. The maintainer also identified the project's [no-LLM contribution policy](https://github.com/pypa/flit/blob/main/doc/development.rst). Our externally submitted text was AI-assisted and had not been screened against that policy. We will not submit further AI-generated issues, comments or PRs to Flit. The cross-version standards interpretation remains unresolved; the checker behavior is unchanged until supported by authoritative guidance.
 
+## Optional hash-pinned public-package reproduction
+
+A [standalone, explicitly opt-in reproducer](../examples/reproduce_flit_case.py) is available for the pinned `packaging==25.0` / Flit Core comparison above. It requires Python 3.13 for the full build.
+
+```bash
+python examples/reproduce_flit_case.py --dry-run
+python examples/reproduce_flit_case.py --self-test
+# Optional: in a trusted, disposable environment only:
+python3.13 examples/reproduce_flit_case.py --execute
+```
+
+The first two commands have **no network access or third-party build execution**; the offline synthetic self-test checks the metadata parser and the SHA-256 tamper-detection guard. The last command intentionally downloads and runs third-party build backend code. It verifies the published [PyPI packaging source](https://pypi.org/project/packaging/25.0/), [Flit 3.12.0](https://pypi.org/project/flit-core/3.12.0/), [Flit 4.2.0](https://pypi.org/project/flit-core/4.2.0/) and [wheel 0.48.0](https://pypi.org/project/wheel/0.48.0/) SHA-256 hashes **before installation or building**, and prints a local evidence receipt. Hash checking does not make downloaded third-party code safe. The networked path has **not** been run by this maintainer session; the historical [pinned integration CI](https://github.com/swiast/dist-parity/actions/runs/43483660060) is separate evidence.
+
+This test helper is not part of the released `v0.1.2` tag. It is only on unreleased main, and none of this self-authored validation is independent adoption.
 ## Scope: a narrow extra check
 
 | Tool | Main check | What dist-parity adds |
