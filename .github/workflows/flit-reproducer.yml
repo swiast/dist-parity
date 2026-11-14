@@ -1,0 +1,52 @@
+name: Opt-in hash-pinned Flit reproduction
+
+# This workflow runs third-party public build-backend code in an ephemeral CI
+# worker; unlike --dry-run/--self-test, it intentionally requires network access.
+# It is maintainer-run verification, NOT external adoption or upstream endorsement.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/flit-reproducer.yml'
+      - 'examples/reproduce_flit_case.py'
+      - 'tests/test_reproduce_flit_case.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/flit-reproducer.yml'
+      - 'examples/reproduce_flit_case.py'
+      - 'tests/test_reproduce_flit_case.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    name: Pinned public sdist / Flit 3.12.0 and 4.2.0
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify the offline and synthetic paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python examples/reproduce_flit_case.py --dry-run
+          python examples/reproduce_flit_case.py --self-test
+      - name: Download, verify hashes, build and compare the real artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python examples/reproduce_flit_case.py --execute | tee "$RUNNER_TEMP/dist-parity-flit-reproduction.txt"
+          {
+            echo '### Public-package Flit reproduction (maintainer CI; not outside adoption)'
+            echo 'These inputs were downloaded from PyPI and verified against pinned SHA-256 digests before any build backend was installed.'
+            echo 'This checks the recorded metadata deltas, not standards compliance or an upstream defect.'
+            echo '#### Reproduction receipt'
+            echo '~~~text'
+            tail -n 45 "$RUNNER_TEMP/dist-parity-flit-reproduction.txt"
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
