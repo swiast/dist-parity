@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Move checkout/setup-python workflow and example references to current v7 Actions; add Python 3.14 to source CI and tagged-release installation smoke coverage without changing published v0.1.2 assets.
 - Make `--json` produce structured exit-2 errors for invalid command-line arguments, without changing human-readable argparse errors.
 - Avoid Python integer-conversion crashes on untrusted, extremely long numeric version components and reject oversized Core Metadata version components cleanly.
 - Add five maintainer-authored regression tests for CLI errors and oversized version handling; not evidence of external adoption.
