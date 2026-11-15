@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import gzip
 import json
 import os
 import shutil
@@ -528,6 +529,43 @@ class CheckTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["findings"], [])
         self.assertIn("could not read sdist", result["error"])
+
+    def _make_sdist_with_oversized_header_only(self):
+        sdist, wheel = make_pair(self.base)
+        huge_member = tarfile.TarInfo("sample_pkg-1.0/huge-payload.dat")
+        # No gigabytes are allocated: only the 512-byte TAR header exists.
+        huge_member.size = 2_000_000_001
+        with gzip.open(sdist, "wb") as compressed:
+            compressed.write(huge_member.tobuf())
+        return sdist, wheel
+
+    def test_sdist_declared_huge_member_rejected_before_data_scan(self):
+        sdist, wheel = self._make_sdist_with_oversized_header_only()
+        with self.assertRaisesRegex(ArtifactError, "member exceeds declared size limit"):
+            compare(sdist, wheel)
+
+    def test_sdist_aggregate_declared_size_budget_and_boundary(self):
+        sdist, wheel = make_pair(self.base)
+        with tarfile.open(sdist, mode="r:gz") as source:
+            total = sum(member.size for member in source.getmembers())
+        self.assertGreater(total, 1)
+        with patch("dist_parity.core.MAX_SDIST_TOTAL_BYTES", total - 1):
+            with self.assertRaisesRegex(ArtifactError, "aggregate declared size limit"):
+                compare(sdist, wheel)
+        with patch("dist_parity.core.MAX_SDIST_TOTAL_BYTES", total):
+            self.assertTrue(compare(sdist, wheel).ok)
+
+    def test_sdist_oversized_member_json_error_has_exit_two(self):
+        sdist, wheel = self._make_sdist_with_oversized_header_only()
+        output, errors = io.StringIO(), io.StringIO()
+        with redirect_stdout(output), redirect_stderr(errors):
+            status = main(["--sdist", str(sdist), "--wheel", str(wheel), "--json"])
+        self.assertEqual(status, 2)
+        self.assertEqual(errors.getvalue(), "")
+        result = json.loads(output.getvalue())
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["findings"], [])
+        self.assertIn("member exceeds declared size limit", result["error"])
 
     def test_truncated_gzip_returns_input_error(self):
         s, w = make_pair(self.base)
