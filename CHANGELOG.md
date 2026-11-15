@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Publish a JSON Schema v1 for both completed comparison and input-error CLI responses, a consumer guide, and an isolated CI contract validator with real outputs and six negative controls (no new runtime dependency).
 - Validate the mandatory Core Metadata `Name` header against ASCII distribution-name syntax and reject non-ASCII `Metadata-Version` digits or a major version of zero; five focused synthetic regression methods, without claiming full PEP 440 or metadata validation.
 - Bound mismatch diagnostics for long or numerous metadata values using item counts, character lengths and stable SHA-256 fingerprints, retaining short inline values and existing finding codes; four synthetic regressions prevent large payloads appearing in text/JSON CI logs.
 - Add an optional `json-file` Action input (requires `format: json`) so subsequent CI steps can consume the JSON report even when the checker fails; preserve 0/1/2 exit codes through Bash `pipefail`, add three unit tests and live Action integration assertions. Current source only, not published v0.1.2.
