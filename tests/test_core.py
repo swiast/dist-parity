@@ -212,6 +212,60 @@ class CheckTests(unittest.TestCase):
             wdict={"Requires_Dist": ["b", "a"]})
         self.assertFalse(compare(s, w).ok)
 
+    def test_dynamic_keywords_may_append_in_metadata_26(self):
+        s, w = make_pair(self.base,
+            sdict={"Dynamic": "Keywords", "Keywords": "dog,puppy"},
+            wdict={"Keywords": "dog, puppy, voting"})
+        self.assertTrue(compare(s, w).ok)
+
+    def test_dynamic_keywords_cannot_remove_reorder_or_modify_baseline(self):
+        for wheel_keywords in ("puppy", "puppy,dog", "dog,cat", "doG,puppy"):
+            with self.subTest(wheel_keywords=wheel_keywords):
+                s, w = make_pair(self.base,
+                    sdict={"Dynamic": "Keywords", "Keywords": "dog,puppy"},
+                    wdict={"Keywords": wheel_keywords})
+                report = compare(s, w)
+                self.assertFalse(report.ok)
+                self.assertIn("DYNAMIC_BASELINE_CHANGED", [f.code for f in report.findings])
+
+    def test_dynamic_author_email_appends_with_comma_in_display_name(self):
+        initial = '"Doe, Jane" <jane@example.org>, Joe <joe@example.org>'
+        s, w = make_pair(self.base,
+            sdict={"Dynamic": "Author-Email", "Author_Email": initial},
+            wdict={"Author_Email": initial + ", New Person <new@example.org>"})
+        self.assertTrue(compare(s, w).ok)
+
+    def test_dynamic_author_email_cannot_modify_initial_identity(self):
+        s, w = make_pair(self.base,
+            sdict={"Dynamic": "Author-Email", "Author_Email": '"Doe, Jane" <jane@example.org>'},
+            wdict={"Author_Email": '"Doe, Jane" <other@example.org>, Bob <bob@example.org>'})
+        report = compare(s, w)
+        self.assertFalse(report.ok)
+        self.assertIn("DYNAMIC_BASELINE_CHANGED", [f.code for f in report.findings])
+
+    def test_dynamic_maintainer_email_cannot_remove_or_reorder(self):
+        baseline = "first@example.org, second@example.org"
+        for wheel_value in ("first@example.org", "second@example.org, first@example.org"):
+            with self.subTest(wheel_value=wheel_value):
+                s, w = make_pair(self.base,
+                    sdict={"Dynamic": "Maintainer-Email", "Maintainer_Email": baseline},
+                    wdict={"Maintainer_Email": wheel_value})
+                report = compare(s, w)
+                self.assertFalse(report.ok)
+                self.assertIn("DYNAMIC_BASELINE_CHANGED", [f.code for f in report.findings])
+
+    def test_older_25_dynamic_keywords_remain_unrestricted(self):
+        s, w = make_pair(self.base,
+            sdict={"meta_version": "2.5", "Dynamic": "Keywords", "Keywords": "a,b"},
+            wdict={"meta_version": "2.5", "Keywords": "different"})
+        self.assertTrue(compare(s, w).ok)
+
+    def test_dynamic_csv_absent_in_source_may_be_added(self):
+        s, w = make_pair(self.base,
+            sdict={"Dynamic": "Keywords"},
+            wdict={"Keywords": "alpha,beta"})
+        self.assertTrue(compare(s, w).ok)
+
     def test_older_dynamic_multi_may_change(self):
         # Metadata versions prior to 2.6 do not enforce retention of source values.
         s, w = make_pair(self.base,
