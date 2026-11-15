@@ -1,0 +1,40 @@
+name: JSON report contract
+
+# Maintainer-authored schema checks; not independent downstream adoption.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/json-contract.yml'
+      - 'schemas/**'
+      - 'scripts/validate_json_contract.py'
+      - 'src/**'
+      - 'tests/test_core.py'
+  pull_request:
+    paths:
+      - '.github/workflows/json-contract.yml'
+      - 'schemas/**'
+      - 'scripts/validate_json_contract.py'
+      - 'src/**'
+      - 'tests/test_core.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-schema:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.14']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install isolated CI-only schema validator
+        run: python -m pip install 'jsonschema==4.26.0'
+      - name: Check contract and test real/synthetic negative controls
+        run: python scripts/validate_json_contract.py
