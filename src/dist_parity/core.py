@@ -77,7 +77,7 @@ def _identity_from_stem(stem: str, kind: str) -> tuple[str, str]:
 
 
 def _obvious_version_conflict(candidate: str, metadata_version: str) -> bool:
-    """Reject proven PEP 440 *epoch/release* mismatches, not suffix aliases.
+    """Reject proven PEP 440 epoch/release and canonical public-stage mismatches.
 
     PEP 440 versions can carry alpha, beta, rc, post, dev and local suffixes.
     These are often normalized by packaging backends; comparing raw strings
@@ -111,7 +111,35 @@ def _obvious_version_conflict(candidate: str, metadata_version: str) -> bool:
             parts.pop()
         return epoch, tuple(parts)
 
-    return key(first) != key(second)
+    if key(first) != key(second):
+        return True
+
+    # A *second*, narrower recognition pass compares only canonical public
+    # stage forms. Alternative PEP 440 separators and spellings such as
+    # 'c' vs 'rc', '.a1' vs 'a1', or '-1' vs '.post1' are left deferred.
+    # Never infer a mismatch from an unrecognized alias or local label.
+    canonical = re.compile(
+        r"v?(?:[0-9]+!)?[0-9]+(?:\\.[0-9]+)*"
+        r"(?:(?P<stage>rc|a|b)(?P<stage_num>[0-9]+))?"
+        r"(?:\\.post(?P<post>[0-9]+))?"
+        r"(?:\\.dev(?P<dev>[0-9]+))?"
+        r"(?:\\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?",
+        re.IGNORECASE,
+    )
+    canonical_first = canonical.fullmatch(candidate)
+    canonical_second = canonical.fullmatch(metadata_version)
+    if canonical_first is None or canonical_second is None:
+        return False
+
+    def public_stage(match: re.Match[str]) -> tuple[str | None, str | None, str | None, str | None]:
+        return (
+            match.group("stage").lower() if match.group("stage") else None,
+            normalized_digit(match.group("stage_num")) if match.group("stage_num") else None,
+            normalized_digit(match.group("post")) if match.group("post") else None,
+            normalized_digit(match.group("dev")) if match.group("dev") else None,
+        )
+
+    return public_stage(canonical_first) != public_stage(canonical_second)
 
 
 def _name_matches_metadata(candidate: str, name: str) -> bool:
