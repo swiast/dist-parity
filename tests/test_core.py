@@ -1021,6 +1021,50 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(context.exception.code, 2)
         self.assertIn("usage:", errors.getvalue())
 
+    def test_pep440_prerelease_release_mismatch_is_detected(self):
+        for first, second in (
+            ("1.0rc1", "2.0rc1"),
+            ("1.0a1", "1.1a1"),
+            ("1.0.post2", "3.0.post2"),
+            ("1.0.dev4", "1.2.dev4"),
+            ("1.0+build1", "4.0+build1"),
+        ):
+            with self.subTest(first=first, second=second):
+                self.assertTrue(_obvious_version_conflict(first, second))
+
+    def test_pep440_epoch_mismatch_is_detected(self):
+        self.assertTrue(_obvious_version_conflict("1!1.0", "2!1.0"))
+        self.assertTrue(_obvious_version_conflict("1.0", "1!1.0"))
+        self.assertFalse(_obvious_version_conflict("0!1.0", "1.0"))
+
+    def test_pep440_release_aliases_remain_conservative(self):
+        for first, second in (
+            ("1.0rc1", "1.0RC1"),
+            ("1.0.0rc01", "1.0rc1"),
+            ("1.0c1", "1.0rc1"),
+            ("1.0-rc1", "1.0rc1"),
+            ("1.0.post1", "1.0.post2"),
+            ("1.0rc1", "1.0rc2"),
+        ):
+            with self.subTest(first=first, second=second):
+                self.assertFalse(_obvious_version_conflict(first, second))
+
+    def test_unrecognized_opaque_versions_remain_deferred(self):
+        self.assertFalse(_obvious_version_conflict("2.0totallyopaque", "1.0totallyopaque"))
+        self.assertFalse(_obvious_version_conflict("1.0rc1", "2.0-unrecognized"))
+
+    def test_sdist_prerelease_filename_conflict_is_input_error(self):
+        s, w = make_pair(self.base, sdict={"version": "1.0rc1"}, wdict={"version": "1.0rc1"})
+        s = s.rename(self.base / "sample_pkg-2.0rc1.tar.gz")
+        with self.assertRaisesRegex(ArtifactError, "sdist filename distribution version differs"):
+            compare(s, w)
+
+    def test_wheel_prerelease_filename_conflict_is_input_error(self):
+        s, w = make_pair(self.base, sdict={"version": "1.0rc1"}, wdict={"version": "1.0rc1"})
+        w = w.rename(self.base / "sample_pkg-2.0rc1-py3-none-any.whl")
+        with self.assertRaisesRegex(ArtifactError, "wheel filename distribution version differs"):
+            compare(s, w)
+
     def test_very_long_numeric_release_components_are_safe(self):
         giant = "9" * 5000
         self.assertFalse(_obvious_version_conflict(giant, giant))
