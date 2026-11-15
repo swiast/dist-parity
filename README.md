@@ -85,6 +85,20 @@ on v0.1.2 can invoke the installed CLI with `--json` directly.
 
 **Action support for multi-wheel builds (`v0.1.2`):** the published composite Action accepts `sdist` and `wheel` inputs together, overriding `dist-dir`, so a build with multiple wheels can select each pair without moving files. Supplying just one input fails with exit 2. Invoke the Action once per intended wheel. The older `v0.1.1` tag supports `dist-dir` only.
 
+## Release permission boundary
+
+Normal `push` and `pull_request` CI has **read-only repository permissions**
+and never creates a GitHub release, writes a tag or publishes to PyPI.
+A former push-triggered GitHub `v0.1.2` release job has been removed to
+avoid unintended publication if historical release state changes. The
+existing `v0.1.2` tag and artifact digests are unchanged.
+
+The [candidate preflight](docs/RELEASE_CANDIDATE.md) is deliberately
+non-publishing. The separate [PyPI workflow](docs/PYPI_PUBLISHING.md)
+remains manual-only and account/environment gated; running it requires
+explicit owner approval. Any future new GitHub release must be separately
+authorized and validated at its exact source commit.
+
 ## 30-second synthetic demonstration
 
 No package registry or private artifacts are required. After installing the project
