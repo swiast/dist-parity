@@ -16,8 +16,8 @@ When a pair can be compared, exit 0 means checked fields agree; exit 1 means
 at least one error-severity finding was recorded. Both exit codes produce a
 comparison object containing `sdist`, `wheel`, `project`, `version`,
 `ok`, and `findings`. Each finding has a nonempty `code`, `severity`
-(`warning` or `error`), a human-facing `message`, and a nullable
-`field`. Warnings do not make `ok` false by themselves.
+(`info`, `warning` or `error`), a human-facing `message`, and a nullable
+`field`. Informational and warning findings do not make `ok` false by themselves.
 
 ```json
 {
@@ -26,7 +26,14 @@ comparison object containing `sdist`, `wheel`, `project`, `version`,
   "project": "example",
   "version": "1.0",
   "ok": true,
-  "findings": []
+  "findings": [
+    {
+      "code": "PARITY_OK",
+      "severity": "info",
+      "message": "All checked metadata fields are consistent",
+      "field": null
+    }
+  ]
 }
 ```
 
