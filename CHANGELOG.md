@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Reject wheels containing multiple top-level `.dist-info` metadata directories, including secondary directories without `METADATA`; four regressions cover ambiguity and allowed nested package/license/SBOM files.
 - Catch unsupported ZIP compression methods while reading wheel METADATA and report a structured input error (CLI exit 2); add three synthetic regression tests for raw ZIP headers, JSON CLI and supported DEFLATE.
 - Reject TAR/ZIP file or symlink entries used as parent directories by other archive members (e.g., `pkg/module.py` plus `pkg/module.py/child`), while retaining legitimate directory parents. Four synthetic regressions cover both formats and symlink cases.
 - Reject ZIP file/directory path aliases and repeated trailing separators; reject colliding TAR names when they remain distinguishable after `tarfile` normalizes directory slashes. Four synthetic regressions cover archive ambiguity, existing TAR duplicate checks, and valid directory controls.
