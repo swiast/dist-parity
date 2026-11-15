@@ -665,6 +665,55 @@ class CheckTests(unittest.TestCase):
             archive.writestr("sample_pkg-1.0.data/data/example.txt", b"hello")
         self.assertTrue(compare(sdist, wheel).ok)
 
+    def test_wheel_data_scripts_symlink_is_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        info = zipfile.ZipInfo("sample_pkg-1.0.data/scripts/runner")
+        info.create_system = 3
+        info.external_attr = 0o120777 << 16
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr(info, b"../../outside")
+        with self.assertRaisesRegex(ArtifactError, "data/scripts.*regular files"):
+            compare(sdist, wheel)
+
+    def test_wheel_data_scripts_nested_file_is_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("sample_pkg-1.0.data/scripts/nested/run", b"#!/bin/sh")
+        with self.assertRaisesRegex(ArtifactError, "data/scripts.*regular files"):
+            compare(sdist, wheel)
+
+    def test_wheel_data_scripts_nested_directory_is_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("sample_pkg-1.0.data/scripts/nested/", b"")
+        with self.assertRaisesRegex(ArtifactError, "data/scripts.*regular files"):
+            compare(sdist, wheel)
+
+    def test_wheel_data_scripts_root_must_be_directory(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("sample_pkg-1.0.data/scripts", b"not a directory")
+        with self.assertRaisesRegex(ArtifactError, "data/scripts must be a directory"):
+            compare(sdist, wheel)
+
+    def test_wheel_data_scripts_explicit_directory_and_file_are_valid(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("sample_pkg-1.0.data/scripts/", b"")
+            archive.writestr("sample_pkg-1.0.data/scripts/runner", b"#!/bin/sh")
+            archive.writestr("sample_pkg-1.0.data/data/deep/resource.txt", b"content")
+        self.assertTrue(compare(sdist, wheel).ok)
+
+    def test_wheel_data_scripts_directory_mode_file_is_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        info = zipfile.ZipInfo("sample_pkg-1.0.data/scripts/runner")
+        info.create_system = 3
+        info.external_attr = 0o040755 << 16
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr(info, b"")
+        with self.assertRaisesRegex(ArtifactError, "data/scripts.*regular files"):
+            compare(sdist, wheel)
+
     def test_nested_dot_data_and_top_level_data_file_remain_allowed(self):
         sdist, wheel = make_pair(self.base)
         with zipfile.ZipFile(wheel, "a") as archive:
