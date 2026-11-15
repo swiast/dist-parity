@@ -77,25 +77,41 @@ def _identity_from_stem(stem: str, kind: str) -> tuple[str, str]:
 
 
 def _obvious_version_conflict(candidate: str, metadata_version: str) -> bool:
-    """Reject provable release-version conflicts without guessing PEP 440 aliases.
+    """Reject proven PEP 440 *epoch/release* mismatches, not suffix aliases.
 
-    Numeric-only versions have unambiguous release segments; trailing zero
-    segments are equivalent (1.0 and 1.0.0). Complex PEP 440 spellings require
-    an external normalizer, so this focused, dependency-free check defers them.
+    PEP 440 versions can carry alpha, beta, rc, post, dev and local suffixes.
+    These are often normalized by packaging backends; comparing raw strings
+    would reject valid aliases. But different epochs or numeric release
+    segments can never denote the same version, even with different suffixes.
+    Only recognize known suffix grammar; ambiguous forms remain deferred.
     """
-    numeric = r"[0-9]+(?:\.[0-9]+)*"
-    if not (re.fullmatch(numeric, candidate) and re.fullmatch(numeric, metadata_version)):
+    suffix = (
+        r"(?:[._-]?(?:alpha|beta|preview|pre|rc|a|b|c)[._-]?[0-9]*)?"
+        r"(?:[._-]?(?:post|rev|r)[._-]?[0-9]*|-[0-9]+)?"
+        r"(?:[._-]?dev[._-]?[0-9]*)?"
+        r"(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?"
+    )
+    pattern = re.compile(
+        r"v?(?:(?P<epoch>[0-9]+)!)?"
+        r"(?P<release>[0-9]+(?:\.[0-9]+)*)"
+        + suffix, re.IGNORECASE
+    )
+    first, second = pattern.fullmatch(candidate), pattern.fullmatch(metadata_version)
+    if first is None or second is None:
         return False
 
-    def release(value: str) -> tuple[str, ...]:
-        # Compare normalized decimal segments as strings: int() can raise
-        # ValueError on untrusted, very long numeric version components.
-        parts = [part.lstrip("0") or "0" for part in value.split(".")]
+    def normalized_digit(value: str) -> str:
+        # Avoid Python's integer-digit conversion cap for untrusted metadata.
+        return value.lstrip("0") or "0"
+
+    def key(match: re.Match[str]) -> tuple[str, tuple[str, ...]]:
+        epoch = normalized_digit(match.group("epoch") or "0")
+        parts = [normalized_digit(part) for part in match.group("release").split(".")]
         while len(parts) > 1 and parts[-1] == "0":
             parts.pop()
-        return tuple(parts)
+        return epoch, tuple(parts)
 
-    return release(candidate) != release(metadata_version)
+    return key(first) != key(second)
 
 
 def _name_matches_metadata(candidate: str, name: str) -> bool:
