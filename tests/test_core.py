@@ -1043,8 +1043,6 @@ class CheckTests(unittest.TestCase):
             ("1.0.0rc01", "1.0rc1"),
             ("1.0c1", "1.0rc1"),
             ("1.0-rc1", "1.0rc1"),
-            ("1.0.post1", "1.0.post2"),
-            ("1.0rc1", "1.0rc2"),
         ):
             with self.subTest(first=first, second=second):
                 self.assertFalse(_obvious_version_conflict(first, second))
@@ -1060,10 +1058,57 @@ class CheckTests(unittest.TestCase):
             compare(s, w)
 
     def test_wheel_prerelease_filename_conflict_is_input_error(self):
-        s, w = make_pair(self.base, sdict={"version": "1.0rc1"}, wdict={"version": "1.0rc1"})
+        s, w = make_pair(self.base, sdict={"version": "1.0"}, wdict={"version": "1.0"})
         w = w.rename(self.base / "sample_pkg-2.0rc1-py3-none-any.whl")
         with self.assertRaisesRegex(ArtifactError, "wheel filename distribution version differs"):
             compare(s, w)
+
+    def test_canonical_pep440_stage_difference_is_proven(self):
+        for source, candidate in (
+            ("1.0rc1", "1.0rc2"),
+            ("1.0a1", "1.0b1"),
+            ("1.0", "1.0rc1"),
+            ("1.0.post1", "1.0.post2"),
+            ("1.0.dev0", "1.0.dev1"),
+            ("1.0rc1.dev2", "1.0rc1.dev3"),
+            ("1.0rc1+local", "1.0rc2+local"),
+        ):
+            with self.subTest(source=source, candidate=candidate):
+                self.assertTrue(_obvious_version_conflict(candidate, source))
+
+    def test_canonical_pep440_stage_aliases_remain_equivalent(self):
+        for source, candidate in (
+            ("1.0RC01", "1.0.0rc1"),
+            ("1.0a0001", "1.0a1"),
+            ("1.0.post01", "1.0.post1"),
+            ("1.0.dev000", "1.0.dev0"),
+        ):
+            with self.subTest(source=source, candidate=candidate):
+                self.assertFalse(_obvious_version_conflict(candidate, source))
+
+    def test_ambiguous_suffix_spelling_and_local_labels_deferred(self):
+        for source, candidate in (
+            ("1.0c1", "1.0rc2"),
+            ("1.0-rc1", "1.0rc2"),
+            ("1.0.post1", "1.0-2"),
+            ("1.0+localA", "1.0+localB"),
+        ):
+            with self.subTest(source=source, candidate=candidate):
+                self.assertFalse(_obvious_version_conflict(candidate, source))
+
+    def test_canonical_prerelease_wheel_filename_conflict(self):
+        sdist, wheel = make_pair(self.base)
+        wheel = wheel.rename(self.base / "sample_pkg-1.0rc2-py3-none-any.whl")
+        with self.assertRaisesRegex(ArtifactError, "wheel filename distribution version differs"):
+            compare(sdist, wheel)
+
+    def test_canonical_postrelease_sdist_filename_conflict(self):
+        sdist, wheel = make_pair(
+            self.base, sdict={"version": "1.0.post1"}, wdict={"version": "1.0.post1"}
+        )
+        sdist = sdist.rename(self.base / "sample_pkg-1.0.post2.tar.gz")
+        with self.assertRaisesRegex(ArtifactError, "sdist filename distribution version differs"):
+            compare(sdist, wheel)
 
     def test_very_long_numeric_release_components_are_safe(self):
         giant = "9" * 5000

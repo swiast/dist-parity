@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Reject provable canonical PEP 440 pre/post/dev stage-number conflicts (e.g. `1.0rc1` versus `1.0rc2`) in artifact identity, while preserving zero/case aliases and deliberately deferring noncanonical spellings or local-only differences. Five synthetic regression methods; runtime remains stdlib-only.
 - Detect provable PEP 440 epoch/release-number mismatches in sdist/wheel identity when versions have recognized prerelease/post/dev/local suffixes, retaining conservative normalization for aliases, opaque versions and suffix-only differences. Six regression test methods; still stdlib-only.
 - Reject wheels containing multiple top-level `.dist-info` metadata directories, including secondary directories without `METADATA`; four regressions cover ambiguity and allowed nested package/license/SBOM files.
 - Catch unsupported ZIP compression methods while reading wheel METADATA and report a structured input error (CLI exit 2); add three synthetic regression tests for raw ZIP headers, JSON CLI and supported DEFLATE.
