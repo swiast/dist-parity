@@ -211,6 +211,58 @@ class CheckTests(unittest.TestCase):
         w = w.rename(self.base / "sample_pkg-1.0-1-py3-none-any.whl")
         self.assertTrue(compare(s, w).ok)
 
+    def test_long_summary_mismatch_is_bounded_and_digested(self):
+        source_secret = "PRIVATE_SOURCE_" + "s" * 500
+        wheel_secret = "PRIVATE_WHEEL_" + "w" * 500
+        s, w = make_pair(self.base,
+            sdict={"Summary": source_secret},
+            wdict={"Summary": wheel_secret})
+        report = compare(s, w)
+        findings = [f for f in report.findings if f.field == "summary"]
+        self.assertEqual(len(findings), 1)
+        message = findings[0].message
+        self.assertIn("sha256=", message)
+        self.assertIn("count=1", message)
+        self.assertNotIn(source_secret, message)
+        self.assertNotIn(wheel_secret, message)
+        self.assertLess(len(message), 400)
+
+    def test_many_repeated_values_are_digested_instead_of_logged(self):
+        values = [f"private-value-{i}" for i in range(30)]
+        s, w = make_pair(self.base,
+            sdict={"Classifier": values},
+            wdict={"Classifier": values[:-1]})
+        report = compare(s, w)
+        message = next(f.message for f in report.findings if f.field == "classifier")
+        self.assertIn("count=30", message)
+        self.assertIn("sha256=", message)
+        self.assertNotIn("private-value-29", message)
+        self.assertLess(len(message), 400)
+
+    def test_short_field_differences_remain_readable(self):
+        s, w = make_pair(self.base,
+            sdict={"Summary": "short-source"},
+            wdict={"Summary": "short-wheel"})
+        report = compare(s, w)
+        message = next(f.message for f in report.findings if f.field == "summary")
+        self.assertIn("short-source", message)
+        self.assertIn("short-wheel", message)
+        self.assertNotIn("summarized", message)
+
+    def test_long_field_redacted_in_cli_json_and_human_output(self):
+        secret = "PRIVATE_SENTINEL_" + "x" * 500
+        make_pair(self.base, wdict={"Summary": secret})
+        for extra_args in (["--json"], []):
+            with self.subTest(extra_args=extra_args):
+                output = io.StringIO()
+                with redirect_stdout(output):
+                    status = main(["--dist-dir", str(self.base), *extra_args])
+                self.assertEqual(status, 1)
+                self.assertNotIn(secret, output.getvalue())
+                self.assertIn("sha256=", output.getvalue())
+                if extra_args:
+                    self.assertEqual(json.loads(output.getvalue())["findings"][0]["field"], "summary")
+
     def test_nondynamic_requires_python_mismatch(self):
         s, w = make_pair(self.base,
             sdict={"Requires_Python": ">=3.11"},

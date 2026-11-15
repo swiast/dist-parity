@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import hashlib
+import json
 from email import policy
 from email.parser import BytesParser
 from email.utils import getaddresses
@@ -16,6 +17,8 @@ MAX_METADATA_BYTES = 2_000_000
 SUPPORTED_METADATA_MAJOR = 2
 MAX_SUPPORTED_METADATA_MINOR = 6
 MAX_ARCHIVE_MEMBERS = 50_000
+MAX_VISIBLE_DIAGNOSTIC_CHARS = 256
+MAX_VISIBLE_DIAGNOSTIC_VALUES = 8
 MULTIPLE_USE_FIELDS = frozenset({
     "classifier", "platform", "supported-platform", "requires-dist",
     "provides-extra", "requires-external", "project-url", "license-file",
@@ -281,6 +284,21 @@ def _normalize_name(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
+def _format_diagnostic_values(values: list[str]) -> str:
+    """Limit untrusted field values in logs while keeping exact diagnostics.
+
+    Short differences remain human-readable; long/many values are represented
+    by a stable SHA-256 over their JSON list, cardinality and character count.
+    This is output-size hygiene, not a guarantee that public CI logs are private.
+    """
+    total = sum(len(value) for value in values)
+    if len(values) <= MAX_VISIBLE_DIAGNOSTIC_VALUES and total <= MAX_VISIBLE_DIAGNOSTIC_CHARS:
+        return repr(values)
+    serial = json.dumps(values, ensure_ascii=True, separators=(",", ":"))
+    digest = hashlib.sha256(serial.encode("ascii")).hexdigest()
+    return f"<summarized count={len(values)} chars={total} sha256={digest}>"
+
+
 def _dynamic_csv_items(field: str, values: list[str]) -> list:
     """Parse existing items for the PEP 808 append-only comparison.
 
@@ -306,9 +324,9 @@ def compare(sdist: Path, wheel: Path) -> Report:
     project = sm["name"][0]
     version = sm["version"][0]
     if _normalize_name(project) != _normalize_name(wm["name"][0]):
-        add("NAME_MISMATCH", "error", f"Name differs: {project!r} vs {wm['name'][0]!r}", "Name")
+        add("NAME_MISMATCH", "error", f"Name differs: sdist={_format_diagnostic_values([project])}; wheel={_format_diagnostic_values(wm['name'])}", "Name")
     if version != wm["version"][0]:
-        add("VERSION_MISMATCH", "error", f"Version differs: {version!r} vs {wm['version'][0]!r}", "Version")
+        add("VERSION_MISMATCH", "error", f"Version differs: sdist={_format_diagnostic_values([version])}; wheel={_format_diagnostic_values(wm['version'])}", "Version")
 
     s_version = _version_pair(sm["metadata-version"][0])
     w_version = _version_pair(wm["metadata-version"][0])
@@ -363,7 +381,7 @@ def compare(sdist: Path, wheel: Path) -> Report:
                     f"sdist={fingerprint(sv)}; wheel={fingerprint(wv)}", field)
             else:
                 add("FIELD_MISMATCH", "error",
-                    f"Non-dynamic field {field!r} differs: sdist={sv!r}; wheel={wv!r}", field)
+                    f"Non-dynamic field {field!r} differs: sdist={_format_diagnostic_values(sv)}; wheel={_format_diagnostic_values(wv)}", field)
     if not findings:
         add("PARITY_OK", "info", "All checked metadata fields are consistent")
     return Report(str(sdist), str(wheel), project, version, findings)
