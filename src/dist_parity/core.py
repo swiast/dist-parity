@@ -171,9 +171,18 @@ def _sdist_metadata(path: Path) -> dict[str, list[str]]:
             names = [m.name for m in files]
             if len(names) != len(set(names)):
                 raise ArtifactError("sdist contains duplicate archive entries")
-            unsafe = [m.name for m in files if not _valid_archive_path(m.name.rstrip("/"))]
+            # A single trailing slash is valid for a directory entry, but
+            # repeated trailing separators are not valid archive paths.
+            unsafe = [m.name for m in files if not _valid_archive_path(
+                m.name[:-1] if m.name.endswith("/") else m.name
+            )]
             if unsafe:
                 raise ArtifactError(f"sdist has unsafe entry path: {unsafe[0]!r}")
+            # 'file' and 'file/' refer to the same extraction path even
+            # though they differ as raw TAR member names.
+            canonical = [name[:-1] if name.endswith("/") else name for name in names]
+            if len(canonical) != len(set(canonical)):
+                raise ArtifactError("sdist contains colliding file/directory archive paths")
             roots = {m.name.split("/")[0] for m in files}
             if len(roots) != 1:
                 raise ArtifactError("sdist must contain exactly one top-level directory")
@@ -219,9 +228,14 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
                 raise ArtifactError("wheel exceeds archive entry limit")
             if len(names) != len(set(names)):
                 raise ArtifactError("wheel contains duplicate archive entries")
-            unsafe = [n for n in names if not _valid_archive_path(n.rstrip("/"))]
+            unsafe = [n for n in names if not _valid_archive_path(
+                n[:-1] if n.endswith("/") else n
+            )]
             if unsafe:
                 raise ArtifactError(f"wheel has unsafe entry path: {unsafe[0]!r}")
+            canonical = [name[:-1] if name.endswith("/") else name for name in names]
+            if len(canonical) != len(set(canonical)):
+                raise ArtifactError("wheel contains colliding file/directory archive paths")
             meta = [n for n in names if n.count("/") == 1 and n.endswith(".dist-info/METADATA")]
             if len(meta) != 1:
                 raise ArtifactError(f"wheel must contain exactly one .dist-info/METADATA (found {len(meta)})")
