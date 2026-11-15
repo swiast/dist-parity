@@ -114,6 +114,13 @@ def _valid_archive_path(name: str) -> bool:
 def _decode_metadata(data: bytes, context: str) -> dict[str, list[str]]:
     if len(data) > MAX_METADATA_BYTES:
         raise ArtifactError(f"{context}: metadata exceeds size limit")
+    # Core Metadata is serialized as UTF-8. compat32's BytesParser can
+    # silently replace malformed header octets with U+FFFD; accepting that
+    # replacement can falsely mark two corrupt distributions as matching.
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ArtifactError(f"{context}: core metadata must be UTF-8") from exc
     try:
         message = BytesParser(policy=policy.compat32).parsebytes(data)
     except Exception as exc:
