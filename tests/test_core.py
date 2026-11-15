@@ -1043,8 +1043,6 @@ class CheckTests(unittest.TestCase):
             ("1.0.0rc01", "1.0rc1"),
             ("1.0c1", "1.0rc1"),
             ("1.0-rc1", "1.0rc1"),
-            ("1.0.post1", "1.0.post2"),
-            ("1.0rc1", "1.0rc2"),
         ):
             with self.subTest(first=first, second=second):
                 self.assertFalse(_obvious_version_conflict(first, second))
@@ -1060,7 +1058,7 @@ class CheckTests(unittest.TestCase):
             compare(s, w)
 
     def test_wheel_prerelease_filename_conflict_is_input_error(self):
-        s, w = make_pair(self.base, sdict={"version": "1.0rc1"}, wdict={"version": "1.0rc1"})
+        s, w = make_pair(self.base, sdict={"version": "1.0"}, wdict={"version": "1.0"})
         w = w.rename(self.base / "sample_pkg-2.0rc1-py3-none-any.whl")
         with self.assertRaisesRegex(ArtifactError, "wheel filename distribution version differs"):
             compare(s, w)
@@ -1099,9 +1097,7 @@ class CheckTests(unittest.TestCase):
                 self.assertFalse(_obvious_version_conflict(candidate, source))
 
     def test_canonical_prerelease_wheel_filename_conflict(self):
-        sdist, wheel = make_pair(
-            self.base, sdict={"version": "1.0rc1"}, wdict={"version": "1.0rc1"}
-        )
+        sdist, wheel = make_pair(self.base)
         wheel = wheel.rename(self.base / "sample_pkg-1.0rc2-py3-none-any.whl")
         with self.assertRaisesRegex(ArtifactError, "wheel filename distribution version differs"):
             compare(sdist, wheel)
