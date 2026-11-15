@@ -58,6 +58,10 @@ These tools are complementary; this is not a claim of unique functionality or su
 
 For an automated release job, use the [README GitHub Actions example](../README.md#github-actions).
 
+## Current-main (unreleased) long-description comparison
+
+Core Metadata 2.1+ permits Description in the message body instead of in the email headers. The unreleased `main` checker now treats either representation as the same logical metadata field for PEP 643 parity, including `Dynamic: Description` exceptions. It detects changed static descriptions while avoiding raw long-description text in diagnostics (length and SHA-256 only). It normalizes CRLF/LF and the specified folded header representation; it does not render, validate, or sanitize reStructuredText/Markdown. This behavior is **not included** in the published `v0.1.2` release. Source: https://packaging.python.org/en/latest/specifications/core-metadata/#description.
+
 ## Known limits
 
 - Single sdist / wheel pair at a time, no proof of build provenance, and no malicious-code detection.
