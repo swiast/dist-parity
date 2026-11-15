@@ -20,6 +20,10 @@ inputs:
     description: 'Output format: text (default) or json; the JSON schema matches --json CLI output'
     required: false
     default: 'text'
+  json-file:
+    description: 'Optional existing-directory output path for the JSON report (requires format: json)'
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -31,6 +35,7 @@ runs:
         DIST_PARITY_SDIST: ${{ inputs['sdist'] }}
         DIST_PARITY_WHEEL: ${{ inputs['wheel'] }}
         DIST_PARITY_FORMAT: ${{ inputs['format'] }}
+        DIST_PARITY_JSON_FILE: ${{ inputs['json-file'] }}
       run: |
         set -euo pipefail
         args=()
@@ -42,6 +47,10 @@ runs:
             exit 2
             ;;
         esac
+        if [[ -n "$DIST_PARITY_JSON_FILE" && "$DIST_PARITY_FORMAT" != "json" ]]; then
+          echo 'dist-parity: json-file requires format: json' >&2
+          exit 2
+        fi
         if [[ -n "$DIST_PARITY_SDIST" || -n "$DIST_PARITY_WHEEL" ]]; then
           # Let the CLI validate incomplete explicit pairs, including JSON exit-2 errors.
           if [[ -n "$DIST_PARITY_SDIST" ]]; then args+=(--sdist "$DIST_PARITY_SDIST"); fi
@@ -49,4 +58,9 @@ runs:
         else
           args+=(--dist-dir "$DIST_PARITY_DIST_DIR")
         fi
-        PYTHONPATH="$DIST_PARITY_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}" python -m dist_parity "${args[@]}"
+        if [[ -n "$DIST_PARITY_JSON_FILE" ]]; then
+          # pipefail preserves checker exit 1/2 while keeping its JSON for later CI steps.
+          PYTHONPATH="$DIST_PARITY_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}" python -m dist_parity "${args[@]}" | tee -- "$DIST_PARITY_JSON_FILE"
+        else
+          PYTHONPATH="$DIST_PARITY_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}" python -m dist_parity "${args[@]}"
+        fi
