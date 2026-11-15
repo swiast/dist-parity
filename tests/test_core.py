@@ -699,6 +699,67 @@ class CheckTests(unittest.TestCase):
             archive.writestr("sample_pkg-1.0.dist-info/sboms/example.json", b"{}")
         self.assertTrue(compare(sdist, wheel).ok)
 
+    def _rewrite_wheel_header(self, wheel: Path, raw: bytes) -> None:
+        with zipfile.ZipFile(wheel, "r") as original:
+            entries = [(info.filename, original.read(info)) for info in original.infolist()]
+        with zipfile.ZipFile(wheel, "w") as rewritten:
+            for name, content in entries:
+                if name.endswith(".dist-info/WHEEL"):
+                    content = raw
+                rewritten.writestr(name, content)
+
+    def test_empty_wheel_version_header_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        self._rewrite_wheel_header(wheel, b"")
+        with self.assertRaisesRegex(ArtifactError, "exactly one Wheel-Version"):
+            compare(sdist, wheel)
+
+    def test_duplicate_wheel_version_headers_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        self._rewrite_wheel_header(wheel, b"Wheel-Version: 1.0\\nWheel-Version: 1.0\\n")
+        with self.assertRaisesRegex(ArtifactError, "exactly one Wheel-Version"):
+            compare(sdist, wheel)
+
+    def test_malformed_wheel_version_header_rejected(self):
+        for invalid in ("1.x", "v1.0", "١.0", "1"):
+            with self.subTest(invalid=invalid):
+                sdist, wheel = make_pair(self.base)
+                self._rewrite_wheel_header(wheel, f"Wheel-Version: {invalid}\\n".encode())
+                with self.assertRaisesRegex(ArtifactError, "ASCII decimal"):
+                    compare(sdist, wheel)
+
+    def test_unsupported_wheel_major_version_rejected(self):
+        for version in ("0.9", "2.0", "12.1"):
+            with self.subTest(version=version):
+                sdist, wheel = make_pair(self.base)
+                self._rewrite_wheel_header(wheel, f"Wheel-Version: {version}\\n".encode())
+                with self.assertRaisesRegex(ArtifactError, "unsupported Wheel-Version major"):
+                    compare(sdist, wheel)
+
+    def test_future_wheel_minor_version_remains_parseable(self):
+        sdist, wheel = make_pair(self.base)
+        self._rewrite_wheel_header(wheel, b"Wheel-Version: 1.9\\nGenerator: synthetic\\n")
+        self.assertTrue(compare(sdist, wheel).ok)
+
+    def test_non_utf8_wheel_header_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        self._rewrite_wheel_header(wheel, b"Wheel-Version: 1.0\\nGenerator: \\xff\\n")
+        with self.assertRaisesRegex(ArtifactError, "WHEEL must be UTF-8"):
+            compare(sdist, wheel)
+
+    def test_unsupported_wheel_major_cli_json_exit_two(self):
+        sdist, wheel = make_pair(self.base)
+        self._rewrite_wheel_header(wheel, b"Wheel-Version: 2.0\\n")
+        output, errors = io.StringIO(), io.StringIO()
+        with redirect_stdout(output), redirect_stderr(errors):
+            status = main(["--sdist", str(sdist), "--wheel", str(wheel), "--json"])
+        self.assertEqual(status, 2)
+        self.assertEqual(errors.getvalue(), "")
+        result = json.loads(output.getvalue())
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["findings"], [])
+        self.assertIn("unsupported Wheel-Version major", result["error"])
+
     def test_missing_wheel_metadata(self):
         s, w = make_pair(self.base)
         with zipfile.ZipFile(w, "w") as out:
