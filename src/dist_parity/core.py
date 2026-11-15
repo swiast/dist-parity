@@ -119,11 +119,11 @@ def _obvious_version_conflict(candidate: str, metadata_version: str) -> bool:
     # 'c' vs 'rc', '.a1' vs 'a1', or '-1' vs '.post1' are left deferred.
     # Never infer a mismatch from an unrecognized alias or local label.
     canonical = re.compile(
-        r"v?(?:[0-9]+!)?[0-9]+(?:\\.[0-9]+)*"
+        r"v?(?:[0-9]+!)?[0-9]+(?:\.[0-9]+)*"
         r"(?:(?P<stage>rc|a|b)(?P<stage_num>[0-9]+))?"
-        r"(?:\\.post(?P<post>[0-9]+))?"
-        r"(?:\\.dev(?P<dev>[0-9]+))?"
-        r"(?:\\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?",
+        r"(?:\.post(?P<post>[0-9]+))?"
+        r"(?:\.dev(?P<dev>[0-9]+))?"
+        r"(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?",
         re.IGNORECASE,
     )
     canonical_first = canonical.fullmatch(candidate)
