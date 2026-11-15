@@ -71,6 +71,14 @@ dist-parity --dist-dir dist --json
 
 `--dist-dir` accepts exactly one `.tar.gz` and one `.whl`. When you build multiple platform wheels, invoke once per wheel with `--sdist` and `--wheel`.
 
+**Unreleased Action JSON mode (current `main`, not v0.1.2):** the composite Action
+now accepts `format: json` (default: `text`). JSON diagnostics use the CLI's
+existing `--json` schema, including for incomplete explicit artifact pairs.
+This feature is **not yet available** when using the published
+`swiast/dist-parity@v0.1.2` tag; do not advertise it in tagged examples
+until a new release is approved and verified. CI integrations requiring JSON
+on v0.1.2 can invoke the installed CLI with `--json` directly.
+
 **Action support for multi-wheel builds (`v0.1.2`):** the published composite Action accepts `sdist` and `wheel` inputs together, overriding `dist-dir`, so a build with multiple wheels can select each pair without moving files. Supplying just one input fails with exit 2. Invoke the Action once per intended wheel. The older `v0.1.1` tag supports `dist-dir` only.
 
 ## 30-second synthetic demonstration
