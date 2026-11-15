@@ -20,6 +20,13 @@ The [release-preflight workflow](../.github/workflows/release-preflight.yml):
    module CLI without importing the source checkout.
 6. Displays the receipt's artifact digests in the workflow's job summary.
 
+The normal source CI no longer contains a push-triggered GitHub release job
+and never requests `contents: write`. This closes the previous conditional
+auto-publication path for `v0.1.2`; the historical released tag and files
+remain unchanged. The separate PyPI workflow is still manual-only with a
+protected `pypi` environment. A new release needs a separately approved,
+reviewed publication process.
+
 It intentionally does **not** upload built wheels, sdists or receipts to
 public release assets or an artifact store. The files remain inside the
 ephemeral CI worker. A separate owner decision is required for publication.
