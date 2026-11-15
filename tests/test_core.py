@@ -3,6 +3,10 @@ from __future__ import annotations
 
 import io
 import json
+import os
+import shutil
+import subprocess
+import textwrap
 import tarfile
 import tempfile
 import unittest
@@ -457,6 +461,58 @@ class CheckTests(unittest.TestCase):
         (self.base / "extra.whl").write_bytes(b"")
         with self.assertRaisesRegex(ArtifactError, "exactly one"):
             locate_distributions(self.base)
+
+    def _run_composite_action(self, *, dist_dir=None, sdist="", wheel="", output_format="json"):
+        if shutil.which("bash") is None:
+            self.skipTest("composite action requires Bash")
+        # Execute the literal action run script in a GitHub-like environment:
+        # avoids external YAML dependencies and exercises quoting/exit codes.
+        action = (Path(__file__).resolve().parents[1] / "action.yml").read_text()
+        self.assertEqual(action.count("      run: |"), 1)
+        script = textwrap.dedent(action.split("      run: |", 1)[1])
+        env = os.environ.copy()
+        env.update({
+            "DIST_PARITY_ACTION_PATH": str(Path(__file__).resolve().parents[1]),
+            "DIST_PARITY_DIST_DIR": str(dist_dir or self.base),
+            "DIST_PARITY_SDIST": str(sdist),
+            "DIST_PARITY_WHEEL": str(wheel),
+            "DIST_PARITY_FORMAT": output_format,
+        })
+        return subprocess.run(
+            ["bash", "-c", script], env=env, cwd=self.base,
+            capture_output=True, text=True, check=False
+        )
+
+    def test_action_json_dist_directory(self):
+        make_pair(self.base)
+        result = self._run_composite_action(dist_dir=self.base)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertTrue(payload["ok"], payload)
+        self.assertEqual(payload["project"], "sample-pkg")
+
+    def test_action_json_incomplete_pair(self):
+        sdist, _ = make_pair(self.base)
+        result = self._run_composite_action(sdist=sdist)
+        self.assertEqual(result.returncode, 2)
+        payload = json.loads(result.stdout)
+        self.assertFalse(payload["ok"])
+        self.assertIn("--sdist and --wheel", payload["error"])
+
+    def test_action_json_explicit_paths_with_spaces(self):
+        folder = self.base / "artifacts with spaces"
+        folder.mkdir()
+        sdist, wheel = make_pair(folder)
+        result = self._run_composite_action(sdist=sdist, wheel=wheel)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(json.loads(result.stdout)["ok"])
+
+    def test_action_invalid_format_is_input_error(self):
+        make_pair(self.base)
+        result = self._run_composite_action(output_format="xml")
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("format must be text or json", result.stderr)
 
     def test_cli_json_success(self):
         make_pair(self.base)

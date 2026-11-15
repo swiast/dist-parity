@@ -16,6 +16,10 @@ inputs:
     description: 'Explicit wheel (.whl); requires sdist, overrides dist-dir'
     required: false
     default: ''
+  format:
+    description: 'Output format: text (default) or json; the JSON schema matches --json CLI output'
+    required: false
+    default: 'text'
 runs:
   using: 'composite'
   steps:
@@ -26,14 +30,23 @@ runs:
         DIST_PARITY_DIST_DIR: ${{ inputs['dist-dir'] }}
         DIST_PARITY_SDIST: ${{ inputs['sdist'] }}
         DIST_PARITY_WHEEL: ${{ inputs['wheel'] }}
+        DIST_PARITY_FORMAT: ${{ inputs['format'] }}
       run: |
         set -euo pipefail
-        if [[ -n "$DIST_PARITY_SDIST" || -n "$DIST_PARITY_WHEEL" ]]; then
-          if [[ -z "$DIST_PARITY_SDIST" || -z "$DIST_PARITY_WHEEL" ]]; then
-            echo 'dist-parity: sdist and wheel action inputs must be provided together' >&2
+        args=()
+        case "$DIST_PARITY_FORMAT" in
+          text) ;;
+          json) args+=(--json) ;;
+          *)
+            echo "dist-parity: format must be text or json (got '$DIST_PARITY_FORMAT')" >&2
             exit 2
-          fi
-          PYTHONPATH="$DIST_PARITY_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}" python -m dist_parity --sdist "$DIST_PARITY_SDIST" --wheel "$DIST_PARITY_WHEEL"
+            ;;
+        esac
+        if [[ -n "$DIST_PARITY_SDIST" || -n "$DIST_PARITY_WHEEL" ]]; then
+          # Let the CLI validate incomplete explicit pairs, including JSON exit-2 errors.
+          if [[ -n "$DIST_PARITY_SDIST" ]]; then args+=(--sdist "$DIST_PARITY_SDIST"); fi
+          if [[ -n "$DIST_PARITY_WHEEL" ]]; then args+=(--wheel "$DIST_PARITY_WHEEL"); fi
         else
-          PYTHONPATH="$DIST_PARITY_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}" python -m dist_parity --dist-dir "$DIST_PARITY_DIST_DIR"
+          args+=(--dist-dir "$DIST_PARITY_DIST_DIR")
         fi
+        PYTHONPATH="$DIST_PARITY_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}" python -m dist_parity "${args[@]}"
