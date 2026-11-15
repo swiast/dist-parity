@@ -203,7 +203,9 @@ def _sdist_metadata(path: Path) -> dict[str, list[str]]:
             if _obvious_version_conflict(root_version, version):
                 raise ArtifactError("sdist root directory distribution version differs from PKG-INFO Version")
             return metadata
-    except (OSError, tarfile.TarError, EOFError) as exc:
+    except (OSError, tarfile.TarError, EOFError, zlib.error) as exc:
+        # Invalid DEFLATE bytes may surface as zlib.error only *after*
+        # tarfile.open() succeeds and members are being enumerated.
         raise ArtifactError(f"could not read sdist {path}: {exc}") from exc
 
 
