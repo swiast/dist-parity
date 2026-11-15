@@ -597,6 +597,33 @@ class CheckTests(unittest.TestCase):
         with self.assertRaises(ArtifactError):
             compare(self.base / "missing.tar.gz", self.base / "missing.whl")
 
+    def test_second_dist_info_root_with_nonmetadata_file_is_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("second_pkg-2.0.dist-info/RECORD", b"")
+        with self.assertRaisesRegex(ArtifactError, "exactly one top-level .dist-info"):
+            compare(sdist, wheel)
+
+    def test_second_explicit_empty_dist_info_directory_is_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("second_pkg-2.0.dist-info/", b"")
+        with self.assertRaisesRegex(ArtifactError, "exactly one top-level .dist-info"):
+            compare(sdist, wheel)
+
+    def test_nested_package_directory_ending_dist_info_is_allowed(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("sample_pkg/vendor.dist-info/data.txt", b"content")
+        self.assertTrue(compare(sdist, wheel).ok)
+
+    def test_files_within_the_single_selected_dist_info_are_allowed(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("sample_pkg-1.0.dist-info/licenses/LICENSE", b"MIT")
+            archive.writestr("sample_pkg-1.0.dist-info/sboms/example.json", b"{}")
+        self.assertTrue(compare(sdist, wheel).ok)
+
     def test_missing_wheel_metadata(self):
         s, w = make_pair(self.base)
         with zipfile.ZipFile(w, "w") as out:
