@@ -129,6 +129,10 @@ def _decode_metadata(data: bytes, context: str) -> dict[str, list[str]]:
     for field, values in result.items():
         if field not in MULTIPLE_USE_FIELDS and len(values) > 1:
             raise ArtifactError(f"{context}: repeated single-use field {field!r}")
+    # The Name field has a strict ASCII format (PyPA name format). Matching
+    # normalized filenames is insufficient if the metadata name is malformed.
+    if re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?", result["name"][0]) is None:
+        raise ArtifactError(f"{context}: invalid Name field (expected an ASCII distribution name)")
     # Since Core Metadata 2.1, Description may be represented after the
     # blank line instead of as an email header. Treat both as the *same*
     # logical field for PEP 643 parity, normalizing CRLF line endings.
@@ -262,7 +266,7 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
 
 
 def _version_pair(text: str) -> tuple[int, int]:
-    match = re.fullmatch(r"(\d+)\.(\d+)", text.strip())
+    match = re.fullmatch(r"([0-9]+)\.([0-9]+)", text.strip())
     if not match:
         raise ArtifactError(f"unrecognized Metadata-Version: {text!r}")
     # Trim leading zeros before int conversion and bound the remaining digits.
@@ -273,6 +277,8 @@ def _version_pair(text: str) -> tuple[int, int]:
     if len(major_text) > 6 or len(minor_text) > 6:
         raise ArtifactError("Metadata-Version numeric components exceed supported range")
     major, minor = int(major_text), int(minor_text)
+    if major == 0:
+        raise ArtifactError(f"invalid Metadata-Version major 0: {text!r}")
     if major > SUPPORTED_METADATA_MAJOR:
         raise ArtifactError(
             f"unsupported Metadata-Version major {major} (supports {SUPPORTED_METADATA_MAJOR}.x): {text!r}"
