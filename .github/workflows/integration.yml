@@ -40,6 +40,23 @@ jobs:
         with:
           dist-dir: dist
           format: json
+      - name: Save Action JSON into a file for later CI steps
+        uses: ./
+        with:
+          dist-dir: dist
+          format: json
+          json-file: ${{ runner.temp }}/dist-parity-valid.json
+      - name: Parse saved Action JSON
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          data = json.loads((Path(os.environ["RUNNER_TEMP"]) / "dist-parity-valid.json").read_text())
+          assert data["ok"] is True, data
+          assert data["project"] == "dist-parity", data
+          PY
       - name: Prepare multi-wheel regression fixture
         shell: bash
         run: |
@@ -83,10 +100,21 @@ jobs:
         with:
           sdist: ${{ env.CHECK_SDIST }}
           format: json
-      - name: Assert incomplete JSON pair failed
+          json-file: ${{ runner.temp }}/dist-parity-invalid.json
+      - name: Assert incomplete JSON pair failed and error was saved
         if: always()
         shell: bash
-        run: test "${{ steps.incomplete_json_pair.outcome }}" = "failure"
+        run: |
+          set -euo pipefail
+          test "${{ steps.incomplete_json_pair.outcome }}" = "failure"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          data = json.loads((Path(os.environ["RUNNER_TEMP"]) / "dist-parity-invalid.json").read_text())
+          assert data["ok"] is False, data
+          assert "--sdist and --wheel" in data["error"], data
+          PY
       - name: Download public packaging sdist and build its wheel
         shell: bash
         run: |

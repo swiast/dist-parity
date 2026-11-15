@@ -512,7 +512,7 @@ class CheckTests(unittest.TestCase):
         with self.assertRaisesRegex(ArtifactError, "exactly one"):
             locate_distributions(self.base)
 
-    def _run_composite_action(self, *, dist_dir=None, sdist="", wheel="", output_format="json"):
+    def _run_composite_action(self, *, dist_dir=None, sdist="", wheel="", output_format="json", json_file=""):
         if shutil.which("bash") is None:
             self.skipTest("composite action requires Bash")
         # Execute the literal action run script in a GitHub-like environment:
@@ -527,6 +527,7 @@ class CheckTests(unittest.TestCase):
             "DIST_PARITY_SDIST": str(sdist),
             "DIST_PARITY_WHEEL": str(wheel),
             "DIST_PARITY_FORMAT": output_format,
+            "DIST_PARITY_JSON_FILE": str(json_file),
         })
         return subprocess.run(
             ["bash", "-c", script], env=env, cwd=self.base,
@@ -556,6 +557,32 @@ class CheckTests(unittest.TestCase):
         result = self._run_composite_action(sdist=sdist, wheel=wheel)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(json.loads(result.stdout)["ok"])
+
+    def test_action_can_save_json_report_to_path_with_spaces(self):
+        make_pair(self.base)
+        report_path = self.base / "report with spaces.json"
+        result = self._run_composite_action(json_file=report_path)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), json.loads(report_path.read_text()))
+        self.assertTrue(json.loads(report_path.read_text())["ok"])
+
+    def test_action_saves_json_even_when_checker_exits_two(self):
+        sdist, _ = make_pair(self.base)
+        report_path = self.base / "invalid-input.json"
+        result = self._run_composite_action(sdist=sdist, json_file=report_path)
+        self.assertEqual(result.returncode, 2)
+        payload = json.loads(report_path.read_text())
+        self.assertEqual(payload, json.loads(result.stdout))
+        self.assertFalse(payload["ok"])
+        self.assertIn("--sdist and --wheel", payload["error"])
+
+    def test_action_json_file_rejected_in_text_mode(self):
+        make_pair(self.base)
+        target = self.base / "must-not-exist.json"
+        result = self._run_composite_action(output_format="text", json_file=target)
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse(target.exists())
+        self.assertIn("json-file requires format: json", result.stderr)
 
     def test_action_invalid_format_is_input_error(self):
         make_pair(self.base)

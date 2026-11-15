@@ -72,7 +72,11 @@ dist-parity --dist-dir dist --json
 `--dist-dir` accepts exactly one `.tar.gz` and one `.whl`. When you build multiple platform wheels, invoke once per wheel with `--sdist` and `--wheel`.
 
 **Unreleased Action JSON mode (current `main`, not v0.1.2):** the composite Action
-now accepts `format: json` (default: `text`). JSON diagnostics use the CLI's
+now accepts `format: json` (default: `text`). Optionally supply `json-file`
+with a writable path in an existing directory to retain the JSON for subsequent
+CI steps, including when the check exits with mismatch status 1 or input status
+2. The Action preserves the original CLI exit code. Supplying `json-file` with
+`format: text` is an invalid input (exit 2). JSON diagnostics use the CLI's
 existing `--json` schema, including for incomplete explicit artifact pairs.
 This feature is **not yet available** when using the published
 `swiast/dist-parity@v0.1.2` tag; do not advertise it in tagged examples

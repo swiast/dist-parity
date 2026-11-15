@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Add an optional `json-file` Action input (requires `format: json`) so subsequent CI steps can consume the JSON report even when the checker fails; preserve 0/1/2 exit codes through Bash `pipefail`, add three unit tests and live Action integration assertions. Current source only, not published v0.1.2.
 - Add a non-publishing release-candidate preflight: the current-source sdist/wheel parity receipt records SHA-256 digests, checks clean-venv wheel install in read-only CI, and never creates a tag/release or uploads candidate distributions; four synthetic tests.
 - Compare static long-description content from the Core Metadata `Description` header or message body (2.1+ representation), while permitting declared Dynamic changes; normalize CRLF/folded header representation, reject ambiguous simultaneous forms, and redact description content in mismatch diagnostics (length + SHA-256). Seven synthetic tests.
 - Expose optional `format: json` in the *unreleased* composite Action while preserving the default text output and valid JSON for incomplete explicit pairs; add four Bash-script regression tests plus GitHub integration coverage.
