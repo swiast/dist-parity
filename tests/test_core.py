@@ -635,6 +635,43 @@ class CheckTests(unittest.TestCase):
         with self.assertRaises(ArtifactError):
             compare(self.base / "missing.tar.gz", self.base / "missing.whl")
 
+    def test_wrong_top_level_wheel_data_root_is_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("another_pkg-9.0.data/scripts/runner", b"#!/bin/sh")
+        with self.assertRaisesRegex(ArtifactError, "data directory identity differs"):
+            compare(sdist, wheel)
+
+    def test_wrong_explicit_empty_wheel_data_root_is_rejected(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("other_pkg-2.0.data/", b"")
+        with self.assertRaisesRegex(ArtifactError, "data directory identity differs"):
+            compare(sdist, wheel)
+
+    def test_second_wheel_data_root_is_rejected_even_if_one_matches(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("sample_pkg-1.0.data/scripts/runner", b"")
+            archive.writestr("extra_pkg-1.0.data/data/secret.txt", b"")
+        with self.assertRaisesRegex(ArtifactError, "data directory identity differs"):
+            compare(sdist, wheel)
+
+    def test_matching_wheel_data_root_and_install_schemes_are_valid(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("sample_pkg-1.0.data/", b"")
+            archive.writestr("sample_pkg-1.0.data/scripts/run", b"#!/bin/sh")
+            archive.writestr("sample_pkg-1.0.data/data/example.txt", b"hello")
+        self.assertTrue(compare(sdist, wheel).ok)
+
+    def test_nested_dot_data_and_top_level_data_file_remain_allowed(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("sample_pkg/assets.data/file.bin", b"data")
+            archive.writestr("example.data", b"ordinary file, not a directory")
+        self.assertTrue(compare(sdist, wheel).ok)
+
     def test_second_dist_info_root_with_nonmetadata_file_is_rejected(self):
         sdist, wheel = make_pair(self.base)
         with zipfile.ZipFile(wheel, "a") as archive:
