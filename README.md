@@ -34,6 +34,7 @@ Please do not post proprietary archives, private names, tokens, or credentials.
 - All non-`Dynamic` metadata fields match, for sdist metadata version 2.2+, including long descriptions stored in the email body or the `Description` header.
 - For source metadata 2.6+, `Dynamic` list fields retain their source entries as an unchanged prefix, allowing only appended entries. This includes repeated headers and the comma-separated `Keywords`, `Author-Email`, and `Maintainer-Email` lists (quoted email display names are parsed as addresses). Earlier metadata versions allow broader changes.
 - Core Metadata headers and long descriptions must be valid UTF-8 byte streams; malformed encodings are rejected as input errors rather than silently replaced by the email parser.
+- Sdist TAR members are subject to declared-size budgets: 2 GB per member and 4 GB total. This rejects implausibly large member headers before further scanning; it is **not a complete decompression-bomb defense** (gzip/PAX parser work is not fully bounded). The tool never extracts archive members to disk.
 - Corrupt gzip/DEFLATE input is reported as an invalid sdist (CLI exit 2), including corruption encountered after initially readable tar members; no unchecked traceback is exposed.
 - Unsupported ZIP compression methods for wheel `METADATA` produce a structured input error rather than an uncaught traceback.
 - Wheels must have one top-level `.dist-info` metadata root; additional top-level metadata roots are rejected even when they do not contain a second `METADATA` file.
