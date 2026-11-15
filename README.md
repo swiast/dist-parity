@@ -40,7 +40,7 @@ Please do not post proprietary archives, private names, tokens, or credentials.
 - Archives contain required metadata files; no suspicious traversal paths or duplicate wheel entries. ZIP file/directory aliases (`name` and `name/`) and repeated trailing separators are rejected; both TAR and ZIP reject a file or symlink occupying a parent path required by another member (`file` plus `file/child`). TAR names follow Python `tarfile` normalization; ordinary directory entries remain accepted. Wheel `METADATA`, `WHEEL`, and `RECORD` must be regular ZIP file members, not symlinks or directories.
 - Archive distribution-name identity matches across sdist filename/root/PKG-INFO and wheel filename/.dist-info/METADATA.
 - Wheel filenames with an optional build tag require a leading digit, per the wheel format.
-- Obviously conflicting numeric release versions in filenames/archive directories are rejected without treating equivalent forms such as `1.0` and `1.0.0` as different.
+- Proven PEP 440 epoch/release-number mismatches in filenames/archive directories are rejected even when prerelease, post-release, development or local suffixes are present (e.g. `1.0rc1` vs `2.0rc1`). Equivalent release segments such as `1.0` and `1.0.0` remain allowed. **Suffix-only differences remain deliberately deferred**, since this is not a full PEP 440 normalizer.
 - Unknown future minor Core Metadata versions trigger warnings; unsupported future major versions fail closed.
 - Machine-readable JSON is available for downstream CI tools.
 
