@@ -31,7 +31,7 @@ Please do not post proprietary archives, private names, tokens, or credentials.
 ## What it checks
 
 - Sdist and wheel agree on distribution **Name** and **Version**.
-- All non-`Dynamic` metadata fields match, for sdist metadata version 2.2+.
+- All non-`Dynamic` metadata fields match, for sdist metadata version 2.2+, including long descriptions stored in the email body or the `Description` header.
 - For source metadata 2.6+, `Dynamic` list fields retain their source entries as an unchanged prefix, allowing only appended entries. This includes repeated headers and the comma-separated `Keywords`, `Author-Email`, and `Maintainer-Email` lists (quoted email display names are parsed as addresses). Earlier metadata versions allow broader changes.
 - Archives contain required metadata files; no suspicious traversal paths or duplicate wheel entries. Wheel `METADATA`, `WHEEL`, and `RECORD` must be regular ZIP file members, not symlinks or directories.
 - Archive distribution-name identity matches across sdist filename/root/PKG-INFO and wheel filename/.dist-info/METADATA.
@@ -148,7 +148,7 @@ example 1.2.0: FAIL
 - **Use artifacts built from the same source distribution**, not an unrelated/prebuilt wheel. The packaging standard's static metadata rule is about wheels built from a given sdist.
 - Older sdist metadata (before version 2.2) gets Name/Version comparison only, with a warning.
 - Dynamic singleton fields may differ by design. For sdist metadata version 2.6+, dynamic multivalued fields keep their baseline values unchanged at the beginning, with only appended new entries; older metadata versions use the earlier rule.
-- Checks email-style metadata **headers**, not long-description body semantics, dependency resolution, archive signatures, SBOM provenance, package reproducibility, or wheel RECORD cryptographic integrity.
+- Compares long-description text (including Core Metadata 2.1+ body form), normalizing CRLF/LF and standard folded header form. It does **not** check long-description markup rendering, dependency resolution, archive signatures, SBOM provenance, package reproducibility or wheel RECORD cryptographic integrity. Description mismatches are reported by length and SHA-256 rather than echoing their contents.
 - This is **not** a vulnerability scanner, proof of package integrity, installer, or replacement for `twine check`, `check-wheel-contents`, build/test workflows, and publisher attestations.
 - Initial MVP supports one wheel at a time and does not infer whether two supplied artifacts actually originated from the same build.
 

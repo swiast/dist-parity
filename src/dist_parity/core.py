@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import hashlib
 from email import policy
 from email.parser import BytesParser
 from email.utils import getaddresses
@@ -125,6 +126,21 @@ def _decode_metadata(data: bytes, context: str) -> dict[str, list[str]]:
     for field, values in result.items():
         if field not in MULTIPLE_USE_FIELDS and len(values) > 1:
             raise ArtifactError(f"{context}: repeated single-use field {field!r}")
+    # Since Core Metadata 2.1, Description may be represented after the
+    # blank line instead of as an email header. Treat both as the *same*
+    # logical field for PEP 643 parity, normalizing CRLF line endings.
+    if "description" in result:
+        value = result["description"][0].replace("\r\n", "\n")
+        result["description"] = [value.replace("\n       |", "\n")]
+    payload = message.get_payload(decode=True)
+    if payload:
+        try:
+            body = payload.decode("utf-8").replace("\r\n", "\n")
+        except UnicodeDecodeError as exc:
+            raise ArtifactError(f"{context}: Description body must be UTF-8") from exc
+        if "description" in result:
+            raise ArtifactError(f"{context}: Description given in both header and body")
+        result["description"] = [body]
     return result
 
 
@@ -334,7 +350,20 @@ def compare(sdist: Path, wheel: Path) -> Report:
                     )
             continue
         if sv != wv:
-            add("FIELD_MISMATCH", "error", f"Non-dynamic field {field!r} differs: sdist={sv!r}; wheel={wv!r}", field)
+            if field == "description":
+                # Avoid dumping a potentially large/proprietary long description
+                # into CI logs; report just presence, lengths and digests.
+                def fingerprint(values: list[str]) -> str:
+                    if not values:
+                        return "missing"
+                    value = values[0]
+                    return f"length={len(value)} sha256={hashlib.sha256(value.encode('utf-8')).hexdigest()}"
+                add("FIELD_MISMATCH", "error",
+                    "Non-dynamic long-description text differs: "
+                    f"sdist={fingerprint(sv)}; wheel={fingerprint(wv)}", field)
+            else:
+                add("FIELD_MISMATCH", "error",
+                    f"Non-dynamic field {field!r} differs: sdist={sv!r}; wheel={wv!r}", field)
     if not findings:
         add("PARITY_OK", "info", "All checked metadata fields are consistent")
     return Report(str(sdist), str(wheel), project, version, findings)
