@@ -2,6 +2,8 @@
 
 ## Unreleased (main)
 
+- Require the three mandatory wheel `.dist-info` metadata entries to be regular files rather than symlink or directory entries; reject malformed optional wheel build tags that do not start with a digit.
+- Add four synthetic regressions for wheel metadata entry types and build-tag syntax. This is owner-directed validation, not independent adoption.
 - Move checkout/setup-python workflow and example references to current v7 Actions; add Python 3.14 to source CI and tagged-release installation smoke coverage without changing published v0.1.2 assets.
 - Make `--json` produce structured exit-2 errors for invalid command-line arguments, without changing human-readable argparse errors.
 - Avoid Python integer-conversion crashes on untrusted, extremely long numeric version components and reject oversized Core Metadata version components cleanly.
