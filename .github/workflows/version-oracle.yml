@@ -1,0 +1,37 @@
+name: PEP 440 reference oracle
+
+# Reference-based maintainer testing; this is not third-party adoption.
+# The production package keeps its dependency-free runtime.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/version-oracle.yml'
+      - 'scripts/validate_pep440_oracle.py'
+      - 'src/dist_parity/core.py'
+  pull_request:
+    paths:
+      - '.github/workflows/version-oracle.yml'
+      - 'scripts/validate_pep440_oracle.py'
+      - 'src/dist_parity/core.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare-with-reference:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.14']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install CI-only version reference
+        run: python -m pip install --disable-pip-version-check 'packaging==26.3'
+      - name: Verify safe conservative PEP 440 heuristic
+        run: python scripts/validate_pep440_oracle.py
