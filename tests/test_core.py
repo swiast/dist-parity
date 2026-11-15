@@ -95,7 +95,7 @@ class CheckTests(unittest.TestCase):
     def test_non_utf8_description_body_is_an_input_error(self):
         invalid = meta().replace(b"Example description", b"\xff")
         sdist, wheel = make_pair(self.base, wdata=invalid)
-        with self.assertRaisesRegex(ArtifactError, "Description body must be UTF-8"):
+        with self.assertRaisesRegex(ArtifactError, "core metadata must be UTF-8"):
             compare(sdist, wheel)
 
     def test_description_header_and_body_together_are_ambiguous(self):
@@ -135,6 +135,43 @@ class CheckTests(unittest.TestCase):
         s, w = make_pair(self.base, sdict={"meta_version": "0.9"})
         with self.assertRaisesRegex(ArtifactError, "invalid Metadata-Version major 0"):
             compare(s, w)
+
+    def test_bad_utf8_header_wheel_is_invalid_input_even_when_values_equal(self):
+        corrupt = meta().replace(
+            b"Version: 1.0", b"Version: 1.0\nSummary: malformed-\xff"
+        )
+        sdist, wheel = make_pair(self.base, sdata=corrupt, wdata=corrupt)
+        with self.assertRaisesRegex(ArtifactError, "core metadata must be UTF-8"):
+            compare(sdist, wheel)
+
+    def test_bad_utf8_header_sdist_is_invalid_input(self):
+        corrupt = meta().replace(
+            b"Version: 1.0", b"Version: 1.0\nSummary: malformed-\xfe"
+        )
+        sdist, wheel = make_pair(self.base, sdata=corrupt)
+        with self.assertRaisesRegex(ArtifactError, "core metadata must be UTF-8"):
+            compare(sdist, wheel)
+
+    def test_valid_utf8_nonascii_metadata_header_is_accepted(self):
+        encoded = meta(Summary="Résumé – validation")
+        sdist, wheel = make_pair(self.base, sdata=encoded, wdata=encoded)
+        self.assertTrue(compare(sdist, wheel).ok)
+
+    def test_bad_utf8_header_is_structured_cli_input_error(self):
+        corrupt = meta().replace(
+            b"Version: 1.0", b"Version: 1.0\nSummary: PRIVATE-\xff-BYTE"
+        )
+        sdist, wheel = make_pair(self.base, wdata=corrupt)
+        output, errors = io.StringIO(), io.StringIO()
+        with redirect_stdout(output), redirect_stderr(errors):
+            status = main(["--sdist", str(sdist), "--wheel", str(wheel), "--json"])
+        self.assertEqual(status, 2)
+        self.assertEqual(errors.getvalue(), "")
+        response = json.loads(output.getvalue())
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["findings"], [])
+        self.assertIn("core metadata must be UTF-8", response["error"])
+        self.assertNotIn("PRIVATE", response["error"])
 
     def test_matching_files(self):
         s, w = make_pair(self.base)

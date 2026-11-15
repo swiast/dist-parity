@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Reject malformed UTF-8 bytes anywhere in Core Metadata before email-header parsing, preventing silent U+FFFD replacement from hiding corrupt metadata; four new regression tests and an updated invalid-body assertion.
 - Remove legacy privileged, push-triggered v0.1.2 release job from normal CI; retain read-only verification and add four offline release-policy regression checks. Historical release assets remain unchanged and future publication requires separate owner approval.
 - Publish a JSON Schema v1 for both completed comparison and input-error CLI responses, a consumer guide, and an isolated CI contract validator with real outputs and six negative controls (no new runtime dependency).
 - Validate the mandatory Core Metadata `Name` header against ASCII distribution-name syntax and reject non-ASCII `Metadata-Version` digits or a major version of zero; five focused synthetic regression methods, without claiming full PEP 440 or metadata validation.
