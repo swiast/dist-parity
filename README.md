@@ -34,6 +34,7 @@ Please do not post proprietary archives, private names, tokens, or credentials.
 - All non-`Dynamic` metadata fields match, for sdist metadata version 2.2+, including long descriptions stored in the email body or the `Description` header.
 - For source metadata 2.6+, `Dynamic` list fields retain their source entries as an unchanged prefix, allowing only appended entries. This includes repeated headers and the comma-separated `Keywords`, `Author-Email`, and `Maintainer-Email` lists (quoted email display names are parsed as addresses). Earlier metadata versions allow broader changes.
 - Core Metadata headers and long descriptions must be valid UTF-8 byte streams; malformed encodings are rejected as input errors rather than silently replaced by the email parser.
+- Corrupt gzip/DEFLATE input is reported as an invalid sdist (CLI exit 2), including corruption encountered after initially readable tar members; no unchecked traceback is exposed.
 - Archives contain required metadata files; no suspicious traversal paths or duplicate wheel entries. Wheel `METADATA`, `WHEEL`, and `RECORD` must be regular ZIP file members, not symlinks or directories.
 - Archive distribution-name identity matches across sdist filename/root/PKG-INFO and wheel filename/.dist-info/METADATA.
 - Wheel filenames with an optional build tag require a leading digit, per the wheel format.
