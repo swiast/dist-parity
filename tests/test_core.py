@@ -54,6 +54,56 @@ class CheckTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
 
+    def test_nondynamic_description_body_change_is_detected_without_leaking_text(self):
+        source = meta()
+        changed = source.replace(b"Example description", b"Private altered text")
+        sdist, wheel = make_pair(self.base, sdata=source, wdata=changed)
+        report = compare(sdist, wheel)
+        failures = [f for f in report.findings if f.field == "description"]
+        self.assertEqual([f.code for f in failures], ["FIELD_MISMATCH"])
+        self.assertIn("sha256=", failures[0].message)
+        self.assertNotIn("Private altered text", failures[0].message)
+        self.assertNotIn("Example description", failures[0].message)
+
+    def test_nondynamic_description_body_removal_is_detected(self):
+        source = meta()
+        empty_body = source.split(b"\n\n", 1)[0] + b"\n\n"
+        sdist, wheel = make_pair(self.base, sdata=source, wdata=empty_body)
+        report = compare(sdist, wheel)
+        self.assertFalse(report.ok)
+        self.assertIn("description", [f.field for f in report.findings])
+        self.assertIn("missing", next(f.message for f in report.findings if f.field == "description"))
+
+    def test_header_and_body_description_with_same_content_match(self):
+        header = b"Metadata-Version: 2.6\nName: sample-pkg\nVersion: 1.0\n"
+        header_description = header + b"Description: first\n       |second\n\n"
+        body_description = header + b"\nfirst\nsecond"
+        sdist, wheel = make_pair(self.base, sdata=header_description, wdata=body_description)
+        self.assertTrue(compare(sdist, wheel).ok)
+
+    def test_dynamic_description_body_change_is_allowed(self):
+        source = meta(Dynamic="Description")
+        modified = meta().replace(b"Example description", b"Different body")
+        sdist, wheel = make_pair(self.base, sdata=source, wdata=modified)
+        self.assertTrue(compare(sdist, wheel).ok)
+
+    def test_description_body_crlf_is_equivalent_to_lf(self):
+        source = meta()
+        sdist, wheel = make_pair(self.base, sdata=source, wdata=source.replace(b"\n", b"\r\n"))
+        self.assertTrue(compare(sdist, wheel).ok)
+
+    def test_non_utf8_description_body_is_an_input_error(self):
+        invalid = meta().replace(b"Example description", b"\xff")
+        sdist, wheel = make_pair(self.base, wdata=invalid)
+        with self.assertRaisesRegex(ArtifactError, "Description body must be UTF-8"):
+            compare(sdist, wheel)
+
+    def test_description_header_and_body_together_are_ambiguous(self):
+        conflicting = meta(Description="Header text")
+        sdist, wheel = make_pair(self.base, sdata=conflicting)
+        with self.assertRaisesRegex(ArtifactError, "both header and body"):
+            compare(sdist, wheel)
+
     def test_matching_files(self):
         s, w = make_pair(self.base)
         result = compare(s, w)
