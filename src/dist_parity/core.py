@@ -336,6 +336,18 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
             }
             if dist_info_roots != {base}:
                 raise ArtifactError("wheel must contain exactly one top-level .dist-info directory")
+            # Wheel non-site-packages files belong to the *.data scheme
+            # directory with the SAME distribution/version stem as .dist-info
+            # (binary distribution format). Scan only top-level directories;
+            # a nested package directory ending in ".data" is unrelated.
+            expected_data_root = base.removesuffix(".dist-info") + ".data"
+            data_roots = {
+                name.split("/", 1)[0]
+                for name in names
+                if "/" in name and name.split("/", 1)[0].endswith(".data")
+            }
+            if data_roots - {expected_data_root}:
+                raise ArtifactError("wheel .data directory identity differs from .dist-info")
             # Wheel metadata is three required regular files, not merely
             # archive entries with the correct names. A directory or Unix
             # symlink at any of these paths must not satisfy the requirement.
