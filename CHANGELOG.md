@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Enforce the Core Metadata 2.6 / PEP 808 append-only baseline for comma-separated Dynamic `Keywords`, `Author-Email` and `Maintainer-Email` lists (using RFC 822-aware address parsing for quoted names), with seven synthetic tests; 2.2–2.5 behavior remains unchanged.
 - Require the three mandatory wheel `.dist-info` metadata entries to be regular files rather than symlink or directory entries; reject malformed optional wheel build tags that do not start with a digit.
 - Add four synthetic regressions for wheel metadata entry types and build-tag syntax. This is owner-directed validation, not independent adoption.
 - Move checkout/setup-python workflow and example references to current v7 Actions; add Python 3.14 to source CI and tagged-release installation smoke coverage without changing published v0.1.2 assets.
