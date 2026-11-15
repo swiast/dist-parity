@@ -543,8 +543,8 @@ class CheckTests(unittest.TestCase):
         data = bytearray(wheel.read_bytes())
         # Patch only the synthetic wheel's first METADATA member; both ZIP
         # headers must agree for zipfile to reach the unsupported method.
-        local = data.index(b"PK\\x03\\x04")
-        central = data.index(b"PK\\x01\\x02")
+        local = data.index(b"PK" + bytes((3, 4)))
+        central = data.index(b"PK" + bytes((1, 2)))
         self.assertEqual(struct.unpack_from("<H", data, local + 8)[0], 0)
         self.assertEqual(struct.unpack_from("<H", data, central + 10)[0], 0)
         struct.pack_into("<H", data, local + 8, 99)
