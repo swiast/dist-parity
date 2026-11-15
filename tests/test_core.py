@@ -314,6 +314,58 @@ class CheckTests(unittest.TestCase):
         with self.assertRaisesRegex(ArtifactError, "duplicate"):
             compare(s, w)
 
+    def test_wheel_build_tag_must_begin_with_digit(self):
+        sdist, wheel = make_pair(self.base)
+        wheel = wheel.rename(self.base / "sample_pkg-1.0-alpha-py3-none-any.whl")
+        with self.assertRaisesRegex(ArtifactError, "build tag must start with a digit"):
+            compare(sdist, wheel)
+
+    def test_wheel_build_tag_with_numeric_prefix_accepted(self):
+        sdist, wheel = make_pair(self.base)
+        wheel = wheel.rename(self.base / "sample_pkg-1.0-2vendor-py3-none-any.whl")
+        self.assertTrue(compare(sdist, wheel).ok)
+
+    def test_wheel_required_entries_reject_symlinks(self):
+        for bad_field in ("METADATA", "WHEEL", "RECORD"):
+            with self.subTest(bad_field=bad_field):
+                sdist, wheel = make_pair(self.base)
+                with zipfile.ZipFile(wheel, "w") as archive:
+                    for field, content in (
+                        ("METADATA", meta()), ("WHEEL", b"Wheel-Version: 1.0\\n"),
+                        ("RECORD", b""),
+                    ):
+                        name = f"sample_pkg-1.0.dist-info/{field}"
+                        if field == bad_field:
+                            info = zipfile.ZipInfo(name)
+                            info.create_system = 3
+                            info.external_attr = (0o120777 << 16)
+                            archive.writestr(info, b"elsewhere")
+                        else:
+                            archive.writestr(name, content)
+                with self.assertRaisesRegex(ArtifactError, f"{bad_field} must not be a symlink"):
+                    compare(sdist, wheel)
+
+    def test_wheel_required_entries_reject_directory_modes(self):
+        for bad_field in ("METADATA", "WHEEL", "RECORD"):
+            with self.subTest(bad_field=bad_field):
+                sdist, wheel = make_pair(self.base)
+                with zipfile.ZipFile(wheel, "w") as archive:
+                    for field, content in (
+                        ("METADATA", meta()), ("WHEEL", b"Wheel-Version: 1.0\\n"),
+                        ("RECORD", b""),
+                    ):
+                        name = f"sample_pkg-1.0.dist-info/{field}"
+                        if field == bad_field:
+                            # No trailing slash: is_dir() alone would miss this.
+                            info = zipfile.ZipInfo(name)
+                            info.create_system = 3
+                            info.external_attr = (0o040755 << 16)
+                            archive.writestr(info, b"")
+                        else:
+                            archive.writestr(name, content)
+                with self.assertRaisesRegex(ArtifactError, f"{bad_field} must be a regular file"):
+                    compare(sdist, wheel)
+
     def test_wheel_metadata_symlink(self):
         s, w = make_pair(self.base)
         info = zipfile.ZipInfo("sample_pkg-1.0.dist-info/METADATA")
