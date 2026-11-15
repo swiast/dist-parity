@@ -133,6 +133,11 @@ command-line argument failures (for example, `--sdist` without `--wheel`)
 and malformed archives. Exit codes remain `0` for parity, `1` for a
 metadata mismatch and `2` for invalid inputs.
 
+Very long or numerous metadata values are summarized by item count, character
+length and SHA-256 digest, rather than reproduced verbatim in log output. Short
+values remain readable. This reduces log volume and incidental disclosure but
+is **not** a confidentiality boundary: use private CI for sensitive projects.
+
 On a completed comparison the object contains `sdist`, `wheel`,
 `project`, `version`, `ok`, and `findings`. Each finding includes
 `code`, `severity`, `message`, and `field`. Invalid arguments or
