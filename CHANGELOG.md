@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Reject ZIP file/directory path aliases and repeated trailing separators; reject colliding TAR names when they remain distinguishable after `tarfile` normalizes directory slashes. Four synthetic regressions cover archive ambiguity, existing TAR duplicate checks, and valid directory controls.
 - Convert late gzip/DEFLATE `zlib.error` failures during sdist member iteration into structured `ArtifactError` input errors (exit 2), with two synthetic regression tests that reproduce corruption after valid tar members.
 - Reject malformed UTF-8 bytes anywhere in Core Metadata before email-header parsing, preventing silent U+FFFD replacement from hiding corrupt metadata; four new regression tests and an updated invalid-body assertion.
 - Remove legacy privileged, push-triggered v0.1.2 release job from normal CI; retain read-only verification and add four offline release-policy regression checks. Historical release assets remain unchanged and future publication requires separate owner approval.
