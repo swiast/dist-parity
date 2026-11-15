@@ -218,7 +218,7 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
                 raise ArtifactError("wheel filename: expected distribution-version[-build]-python-abi-platform.whl")
             # The optional wheel build tag is required to begin with a digit
             # by the wheel filename specification (PEP 427).
-            if len(wheel_parts) == 6 and not wheel_parts[2][0].isdigit():
+            if len(wheel_parts) == 6 and wheel_parts[2][0] not in "0123456789":
                 raise ArtifactError("wheel filename: build tag must start with a digit")
             wheel_name, wheel_version = wheel_parts[:2]
             dist_info_name, dist_info_version = _identity_from_stem(
