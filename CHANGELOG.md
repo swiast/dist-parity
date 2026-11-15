@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Bound declared sdist TAR member sizes (2 GB each, 4 GB aggregate) during header enumeration to reject implausibly large headers before decompression/seek; three synthetic regressions including a header-only oversized member and exact boundary. This is not a comprehensive decompression-bomb defense.
 - Reject provable canonical PEP 440 pre/post/dev stage-number conflicts (e.g. `1.0rc1` versus `1.0rc2`) in artifact identity, while preserving zero/case aliases and deliberately deferring noncanonical spellings or local-only differences. Five synthetic regression methods; runtime remains stdlib-only.
 - Detect provable PEP 440 epoch/release-number mismatches in sdist/wheel identity when versions have recognized prerelease/post/dev/local suffixes, retaining conservative normalization for aliases, opaque versions and suffix-only differences. Six regression test methods; still stdlib-only.
 - Reject wheels containing multiple top-level `.dist-info` metadata directories, including secondary directories without `METADATA`; four regressions cover ambiguity and allowed nested package/license/SBOM files.
