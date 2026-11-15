@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Require any top-level wheel `.data/` installation root to match the selected `.dist-info/` distribution/version stem, rejecting stray/multiple scheme roots while permitting legitimate nested directories and ordinary files. Five synthetic regression tests.
 - Add an isolated Python Packaging 26.3 PEP 440 oracle CI check (Python 3.11/3.14) over 123 valid version spellings and 15,129 ordered pairs; verify no equivalent spelling is marked as an obvious conflict, test symmetry, and count deliberate deferrals. Runtime remains dependency-free; no release publication.
 - Bound declared sdist TAR member sizes (2 GB each, 4 GB aggregate) during header enumeration to reject implausibly large headers before decompression/seek; three synthetic regressions including a header-only oversized member and exact boundary. This is not a comprehensive decompression-bomb defense.
 - Reject provable canonical PEP 440 pre/post/dev stage-number conflicts (e.g. `1.0rc1` versus `1.0rc2`) in artifact identity, while preserving zero/case aliases and deliberately deferring noncanonical spellings or local-only differences. Five synthetic regression methods; runtime remains stdlib-only.
