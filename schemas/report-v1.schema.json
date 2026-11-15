@@ -27,6 +27,7 @@
         },
         "severity": {
           "enum": [
+            "info",
             "warning",
             "error"
           ]
