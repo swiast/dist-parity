@@ -16,7 +16,7 @@ from unittest.mock import patch
 from pathlib import Path
 
 from dist_parity.cli import main
-from dist_parity.core import ArtifactError, compare, locate_distributions, _obvious_version_conflict, _version_pair
+from dist_parity.core import ArtifactError, compare, locate_distributions, _obvious_version_conflict, _version_pair, _decode_metadata
 
 
 def meta(name="sample-pkg", version="1.0", meta_version="2.6", **fields):
@@ -103,6 +103,38 @@ class CheckTests(unittest.TestCase):
         sdist, wheel = make_pair(self.base, sdata=conflicting)
         with self.assertRaisesRegex(ArtifactError, "both header and body"):
             compare(sdist, wheel)
+
+    def test_invalid_ascii_package_name_is_structured_input_error(self):
+        for bad_name in ("-leading", "trailing_", "space name", "café", "slash/name"):
+            with self.subTest(bad_name=bad_name):
+                s, w = make_pair(self.base, sdict={"name": bad_name})
+                with self.assertRaisesRegex(ArtifactError, "invalid Name field"):
+                    compare(s, w)
+
+    def test_wheel_invalid_name_is_rejected_before_comparison(self):
+        s, w = make_pair(self.base, wdict={"name": "non ascii 名"})
+        with self.assertRaisesRegex(ArtifactError, "invalid Name field"):
+            compare(s, w)
+
+    def test_valid_ascii_package_name_forms_remain_supported(self):
+        for name in ("A", "a_b", "Two.Part", "ABC-xyz_123"):
+            with self.subTest(name=name):
+                content = meta(name=name)
+                parsed = _decode_metadata(content, "synthetic")
+                self.assertEqual(parsed["name"], [name])
+
+    def test_non_ascii_metadata_version_numbers_are_rejected(self):
+        for name in ("٢.6", "2.٦", "２.６"):
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(ArtifactError, "unrecognized Metadata-Version"):
+                    _version_pair(name)
+
+    def test_metadata_version_major_zero_is_rejected(self):
+        with self.assertRaisesRegex(ArtifactError, "invalid Metadata-Version major 0"):
+            _version_pair("0.9")
+        s, w = make_pair(self.base, sdict={"meta_version": "0.9"})
+        with self.assertRaisesRegex(ArtifactError, "invalid Metadata-Version major 0"):
+            compare(s, w)
 
     def test_matching_files(self):
         s, w = make_pair(self.base)
