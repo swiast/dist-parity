@@ -301,6 +301,32 @@ def _sdist_metadata(path: Path) -> dict[str, list[str]]:
         raise ArtifactError(f"could not read sdist {path}: {exc}") from exc
 
 
+def _validate_wheel_version_header(data: bytes, context: str) -> None:
+    """Check only the mandatory WHEEL format major version, not install tags.
+
+    Wheel-Version is an email-style header in the WHEEL file (PEP 427).
+    Higher *major* versions must not be treated as wheel 1.x. A future
+    1.x minor is left to specialized installers for compatibility warnings.
+    """
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ArtifactError(f"{context}: WHEEL must be UTF-8") from exc
+    message = BytesParser(policy=policy.compat32).parsebytes(data)
+    if message.defects:
+        raise ArtifactError(f"{context}: malformed WHEEL headers")
+    versions = message.get_all("Wheel-Version", [])
+    if len(versions) != 1:
+        raise ArtifactError(f"{context}: expected exactly one Wheel-Version header")
+    value = str(versions[0]).strip()
+    match = re.fullmatch(r"([0-9]+)\.([0-9]+)", value)
+    if match is None:
+        raise ArtifactError(f"{context}: Wheel-Version must use ASCII decimal major.minor")
+    major = match.group(1).lstrip("0") or "0"
+    if major != "1":
+        raise ArtifactError(f"{context}: unsupported Wheel-Version major (supports 1.x)")
+
+
 def _wheel_metadata(path: Path) -> dict[str, list[str]]:
     if not path.is_file() or path.suffix != ".whl":
         raise ArtifactError(f"expected .whl wheel: {path}")
@@ -370,6 +396,14 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
             if len(data) > MAX_METADATA_BYTES:
                 raise ArtifactError("wheel: METADATA exceeds metadata size limit")
             metadata = _decode_metadata(data, meta[0])
+            wheel_info = archive.getinfo(f"{base}/WHEEL")
+            if wheel_info.file_size > MAX_METADATA_BYTES:
+                raise ArtifactError("wheel: WHEEL exceeds metadata size limit")
+            with archive.open(wheel_info) as stream:
+                wheel_data = stream.read(MAX_METADATA_BYTES + 1)
+            if len(wheel_data) > MAX_METADATA_BYTES:
+                raise ArtifactError("wheel: WHEEL exceeds metadata size limit")
+            _validate_wheel_version_header(wheel_data, f"{base}/WHEEL")
             expected = metadata["name"][0]
             wheel_parts = path.name[:-4].split("-")
             if len(wheel_parts) not in (5, 6) or not all(wheel_parts):
