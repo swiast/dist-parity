@@ -128,6 +128,11 @@ Use this snippet **inside a job** that builds a Python distribution from its own
 
 ### Machine-readable JSON and exit codes
 
+A **versioned JSON Schema v1** and integration guidance are available in
+[the JSON API contract](docs/JSON_API.md). The schema covers successful,
+mismatching and invalid-input output shapes for the current source; it is
+not a claim that unreleased Action options exist in the published v0.1.2.
+
 Pass `--json` for a single JSON object on standard output, including
 command-line argument failures (for example, `--sdist` without `--wheel`)
 and malformed archives. Exit codes remain `0` for parity, `1` for a
