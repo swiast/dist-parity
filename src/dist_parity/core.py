@@ -111,6 +111,29 @@ def _valid_archive_path(name: str) -> bool:
     )
 
 
+
+def _check_archive_file_parents(entries: list[tuple[str, bool]], kind: str) -> None:
+    """Reject an archive file/symlink that is also a parent directory.
+
+    An entry like 'project/module.py' cannot coexist on disk with
+    'project/module.py/child'. This is a read-only structural check, not an
+    extractor or a complete archive-security validator.
+    """
+    files = {
+        name[:-1] if name.endswith("/") else name
+        for name, is_directory in entries
+        if not is_directory
+    }
+    for name, _ in entries:
+        parent = ""
+        for part in name.rstrip("/").split("/")[:-1]:
+            parent = part if not parent else f"{parent}/{part}"
+            if parent in files:
+                raise ArtifactError(
+                    f"{kind} has non-directory parent archive entry: {parent!r}"
+                )
+
+
 def _decode_metadata(data: bytes, context: str) -> dict[str, list[str]]:
     if len(data) > MAX_METADATA_BYTES:
         raise ArtifactError(f"{context}: metadata exceeds size limit")
@@ -183,6 +206,7 @@ def _sdist_metadata(path: Path) -> dict[str, list[str]]:
             canonical = [name[:-1] if name.endswith("/") else name for name in names]
             if len(canonical) != len(set(canonical)):
                 raise ArtifactError("sdist contains colliding file/directory archive paths")
+            _check_archive_file_parents([(m.name, m.isdir()) for m in files], "sdist")
             roots = {m.name.split("/")[0] for m in files}
             if len(roots) != 1:
                 raise ArtifactError("sdist must contain exactly one top-level directory")
@@ -236,6 +260,9 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
             canonical = [name[:-1] if name.endswith("/") else name for name in names]
             if len(canonical) != len(set(canonical)):
                 raise ArtifactError("wheel contains colliding file/directory archive paths")
+            _check_archive_file_parents(
+                [(m.filename, m.is_dir()) for m in archive.infolist()], "wheel"
+            )
             meta = [n for n in names if n.count("/") == 1 and n.endswith(".dist-info/METADATA")]
             if len(meta) != 1:
                 raise ArtifactError(f"wheel must contain exactly one .dist-info/METADATA (found {len(meta)})")
