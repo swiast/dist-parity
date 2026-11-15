@@ -67,5 +67,5 @@ jobs:
               out.write("Maintainer-run verification only. Does not create a release or demonstrate outside adoption.\n\n")
               out.write("This candidate can have the same version string as a previously published release but different bytes. **Never substitute these bytes for historical release assets.**\n\n")
               for label, item in result["artifacts"].items():
-                  out.write(f"- {label}: \`{item['filename']}\` | SHA-256 \`{item['sha256']}\` | {item['size_bytes']} bytes\n")
+                  out.write(f"- {label}: {item['filename']} | SHA-256 {item['sha256']} | {item['size_bytes']} bytes\\n")
           PY
