@@ -36,6 +36,7 @@ Please do not post proprietary archives, private names, tokens, or credentials.
 - Core Metadata headers and long descriptions must be valid UTF-8 byte streams; malformed encodings are rejected as input errors rather than silently replaced by the email parser.
 - Corrupt gzip/DEFLATE input is reported as an invalid sdist (CLI exit 2), including corruption encountered after initially readable tar members; no unchecked traceback is exposed.
 - Unsupported ZIP compression methods for wheel `METADATA` produce a structured input error rather than an uncaught traceback.
+- Wheels must have one top-level `.dist-info` metadata root; additional top-level metadata roots are rejected even when they do not contain a second `METADATA` file.
 - Archives contain required metadata files; no suspicious traversal paths or duplicate wheel entries. ZIP file/directory aliases (`name` and `name/`) and repeated trailing separators are rejected; both TAR and ZIP reject a file or symlink occupying a parent path required by another member (`file` plus `file/child`). TAR names follow Python `tarfile` normalization; ordinary directory entries remain accepted. Wheel `METADATA`, `WHEEL`, and `RECORD` must be regular ZIP file members, not symlinks or directories.
 - Archive distribution-name identity matches across sdist filename/root/PKG-INFO and wheel filename/.dist-info/METADATA.
 - Wheel filenames with an optional build tag require a leading digit, per the wheel format.

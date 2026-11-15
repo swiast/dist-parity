@@ -267,6 +267,16 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
             if len(meta) != 1:
                 raise ArtifactError(f"wheel must contain exactly one .dist-info/METADATA (found {len(meta)})")
             base = meta[0].rsplit("/", 1)[0]
+            # A wheel represents a single distribution. A second top-level
+            # .dist-info root could expose unrelated metadata to installers
+            # even if it does not contain its own METADATA file.
+            dist_info_roots = {
+                name.split("/", 1)[0]
+                for name in names
+                if "/" in name and name.split("/", 1)[0].endswith(".dist-info")
+            }
+            if dist_info_roots != {base}:
+                raise ArtifactError("wheel must contain exactly one top-level .dist-info directory")
             # Wheel metadata is three required regular files, not merely
             # archive entries with the correct names. A directory or Unix
             # symlink at any of these paths must not satisfy the requirement.
