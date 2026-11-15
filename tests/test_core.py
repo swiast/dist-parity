@@ -5,6 +5,7 @@ import io
 import json
 import os
 import shutil
+import struct
 import subprocess
 import textwrap
 import tarfile
@@ -481,6 +482,52 @@ class CheckTests(unittest.TestCase):
         s, w = make_pair(self.base, wdict={"meta_version": "3.0"})
         with self.assertRaisesRegex(ArtifactError, "unsupported Metadata-Version major"):
             compare(s, w)
+
+    def _make_late_deflate_error_sdist(self):
+        """Build a valid initial tar prefix followed by an invalid DEFLATE block.
+
+        BytesParser/tarfile can read the first members before zlib raises;
+        this specifically covers the exception outside tarfile.open().
+        """
+        sdist, wheel = make_pair(self.base)
+        tar_stream = io.BytesIO()
+        with tarfile.open(fileobj=tar_stream, mode="w:") as archive:
+            for index in range(12):
+                if index == 0:
+                    name, content = "sample_pkg-1.0/PKG-INFO", meta()
+                elif index == 1:
+                    name, content = "sample_pkg-1.0/pyproject.toml", b"[project]\nname='sample-pkg'\n"
+                else:
+                    name, content = f"sample_pkg-1.0/payload-{index}.bin", b"A" * 4096
+                info = tarfile.TarInfo(name)
+                info.size = len(content)
+                archive.addfile(info, io.BytesIO(content))
+        # A raw DEFLATE non-final stored block followed by the reserved
+        # BTYPE=3 block (0x06). The 16-KiB prefix is valid and large enough
+        # for tarfile to successfully read some members before reaching it.
+        prefix = tar_stream.getvalue()[:16384]
+        length = len(prefix)
+        stored_block = b"\x00" + struct.pack("<HH", length, length ^ 0xFFFF) + prefix
+        sdist.write_bytes(bytes.fromhex("1f8b0800000000000003")
+                          + stored_block + b"\x06" + b"\x00" * 8)
+        return sdist, wheel
+
+    def test_corrupt_gzip_deflate_after_valid_members_is_input_error(self):
+        sdist, wheel = self._make_late_deflate_error_sdist()
+        with self.assertRaisesRegex(ArtifactError, "could not read sdist"):
+            compare(sdist, wheel)
+
+    def test_corrupt_gzip_deflate_has_structured_cli_json_exit_two(self):
+        sdist, wheel = self._make_late_deflate_error_sdist()
+        output, errors = io.StringIO(), io.StringIO()
+        with redirect_stdout(output), redirect_stderr(errors):
+            status = main(["--sdist", str(sdist), "--wheel", str(wheel), "--json"])
+        self.assertEqual(status, 2)
+        self.assertEqual(errors.getvalue(), "")
+        result = json.loads(output.getvalue())
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["findings"], [])
+        self.assertIn("could not read sdist", result["error"])
 
     def test_truncated_gzip_returns_input_error(self):
         s, w = make_pair(self.base)
