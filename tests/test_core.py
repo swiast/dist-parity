@@ -138,7 +138,7 @@ class CheckTests(unittest.TestCase):
 
     def test_bad_utf8_header_wheel_is_invalid_input_even_when_values_equal(self):
         corrupt = meta().replace(
-            b"Version: 1.0", b"Version: 1.0\\nSummary: malformed-\\xff"
+            b"Version: 1.0", b"Version: 1.0\nSummary: malformed-\xff"
         )
         sdist, wheel = make_pair(self.base, sdata=corrupt, wdata=corrupt)
         with self.assertRaisesRegex(ArtifactError, "core metadata must be UTF-8"):
@@ -146,7 +146,7 @@ class CheckTests(unittest.TestCase):
 
     def test_bad_utf8_header_sdist_is_invalid_input(self):
         corrupt = meta().replace(
-            b"Version: 1.0", b"Version: 1.0\\nSummary: malformed-\\xfe"
+            b"Version: 1.0", b"Version: 1.0\nSummary: malformed-\xfe"
         )
         sdist, wheel = make_pair(self.base, sdata=corrupt)
         with self.assertRaisesRegex(ArtifactError, "core metadata must be UTF-8"):
@@ -159,7 +159,7 @@ class CheckTests(unittest.TestCase):
 
     def test_bad_utf8_header_is_structured_cli_input_error(self):
         corrupt = meta().replace(
-            b"Version: 1.0", b"Version: 1.0\\nSummary: PRIVATE-\\xff-BYTE"
+            b"Version: 1.0", b"Version: 1.0\nSummary: PRIVATE-\xff-BYTE"
         )
         sdist, wheel = make_pair(self.base, wdata=corrupt)
         output, errors = io.StringIO(), io.StringIO()
