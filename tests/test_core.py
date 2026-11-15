@@ -638,6 +638,74 @@ class CheckTests(unittest.TestCase):
             out.writestr("sample_pkg/optional/", b"")
         self.assertTrue(compare(sdist, wheel).ok)
 
+    def test_sdist_rejects_file_paths_used_as_parents(self):
+        for fake_file, nested_name in (
+            ("sample_pkg-1.0", "sample_pkg-1.0/PKG-INFO"),
+            ("sample_pkg-1.0/PKG-INFO", "sample_pkg-1.0/PKG-INFO/hidden"),
+        ):
+            with self.subTest(fake_file=fake_file):
+                sdist, wheel = make_pair(self.base)
+                with tarfile.open(sdist, "r:gz") as src:
+                    members = [(m, src.extractfile(m).read() if m.isfile() else None)
+                               for m in src.getmembers()]
+                with tarfile.open(sdist, "w:gz") as out:
+                    for member, content in members:
+                        out.addfile(member, io.BytesIO(content) if content is not None else None)
+                    if fake_file == "sample_pkg-1.0":
+                        parent = tarfile.TarInfo(fake_file)
+                        parent.size = 1
+                        out.addfile(parent, io.BytesIO(b"x"))
+                    else:
+                        child = tarfile.TarInfo(nested_name)
+                        child.size = 1
+                        out.addfile(child, io.BytesIO(b"x"))
+                with self.assertRaisesRegex(ArtifactError, "non-directory parent archive entry"):
+                    compare(sdist, wheel)
+
+    def test_wheel_rejects_file_paths_used_as_parents(self):
+        for parent, nested in (
+            ("sample_pkg-1.0.dist-info", "sample_pkg-1.0.dist-info/METADATA"),
+            ("sample_pkg/module.py", "sample_pkg/module.py/hidden"),
+        ):
+            with self.subTest(parent=parent):
+                sdist, wheel = make_pair(self.base)
+                with zipfile.ZipFile(wheel, "a") as archive:
+                    archive.writestr(parent, b"file")
+                    if nested.endswith("hidden"):
+                        archive.writestr(nested, b"child")
+                with self.assertRaisesRegex(ArtifactError, "non-directory parent archive entry"):
+                    compare(sdist, wheel)
+
+    def test_wheel_rejects_symlink_paths_used_as_parents(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as archive:
+            info = zipfile.ZipInfo("package/symlink")
+            info.create_system = 3
+            info.external_attr = 0o120777 << 16
+            archive.writestr(info, b"elsewhere")
+            archive.writestr("package/symlink/inside.txt", b"child")
+        with self.assertRaisesRegex(ArtifactError, "non-directory parent archive entry"):
+            compare(sdist, wheel)
+
+    def test_explicit_directory_parents_remain_valid(self):
+        sdist, wheel = make_pair(self.base)
+        with tarfile.open(sdist, "r:gz") as src:
+            members = [(m, src.extractfile(m).read() if m.isfile() else None)
+                       for m in src.getmembers()]
+        with tarfile.open(sdist, "w:gz") as out:
+            for member, content in members:
+                out.addfile(member, io.BytesIO(content) if content is not None else None)
+            directory = tarfile.TarInfo("sample_pkg-1.0/extra/")
+            directory.type = tarfile.DIRTYPE
+            out.addfile(directory)
+            nested = tarfile.TarInfo("sample_pkg-1.0/extra/readme.txt")
+            nested.size = 1
+            out.addfile(nested, io.BytesIO(b"x"))
+        with zipfile.ZipFile(wheel, "a") as archive:
+            archive.writestr("package/extra/", b"")
+            archive.writestr("package/extra/readme.txt", b"x")
+        self.assertTrue(compare(sdist, wheel).ok)
+
     def test_duplicate_sdist_archive_entries(self):
         s, w = make_pair(self.base)
         # A duplicate root metadata member creates ambiguous tarfile lookup behavior.
