@@ -17,6 +17,10 @@ MAX_METADATA_BYTES = 2_000_000
 SUPPORTED_METADATA_MAJOR = 2
 MAX_SUPPORTED_METADATA_MINOR = 6
 MAX_ARCHIVE_MEMBERS = 50_000
+# Declared TAR member-size budget: fail before tarfile seeks/decompresses past
+# enormous members. This is not a hard limit on all gzip/PAX parser work.
+MAX_SDIST_MEMBER_BYTES = 2_000_000_000
+MAX_SDIST_TOTAL_BYTES = 4_000_000_000
 MAX_VISIBLE_DIAGNOSTIC_CHARS = 256
 MAX_VISIBLE_DIAGNOSTIC_VALUES = 8
 MULTIPLE_USE_FIELDS = frozenset({
@@ -231,7 +235,18 @@ def _sdist_metadata(path: Path) -> dict[str, list[str]]:
     try:
         with tarfile.open(path, mode="r:gz") as archive:
             files = []
+            declared_bytes = 0
             for member in archive:
+                # tarfile may need to scan/decompress the previous member
+                # before yielding the next header. Reject unreasonable sizes
+                # as soon as its header is visible, before advancing.
+                if member.size < 0:
+                    raise ArtifactError("sdist member has negative declared size")
+                if member.size > MAX_SDIST_MEMBER_BYTES:
+                    raise ArtifactError("sdist member exceeds declared size limit")
+                declared_bytes += member.size
+                if declared_bytes > MAX_SDIST_TOTAL_BYTES:
+                    raise ArtifactError("sdist exceeds aggregate declared size limit")
                 files.append(member)
                 if len(files) > MAX_ARCHIVE_MEMBERS:
                     raise ArtifactError("sdist exceeds archive entry limit")
