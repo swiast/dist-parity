@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from email import policy
 from email.parser import BytesParser
+from email.utils import getaddresses
 from pathlib import Path, PurePosixPath
 import re
 import tarfile
@@ -21,6 +22,9 @@ MULTIPLE_USE_FIELDS = frozenset({
     "provides-dist", "obsoletes", "provides", "requires",
 })
 EXCLUDED_METADATA_FIELDS = frozenset({"metadata-version", "dynamic"})
+# Core Metadata 2.6 (PEP 808) also protects the existing elements of
+# these single-header, comma-separated lists when they are Dynamic.
+CSV_DYNAMIC_FIELDS = frozenset({"keywords", "author-email", "maintainer-email"})
 
 
 @dataclass(frozen=True)
@@ -261,6 +265,18 @@ def _normalize_name(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
+def _dynamic_csv_items(field: str, values: list[str]) -> list:
+    """Parse existing items for the PEP 808 append-only comparison.
+
+    Keywords are comma-delimited terms. Address headers use RFC 822 syntax
+    so quoted display names may themselves contain commas.
+    """
+    if not values:
+        return []
+    if field == "keywords":
+        return [item.strip() for item in values[0].split(",")]
+    return getaddresses(values)
+
 
 def compare(sdist: Path, wheel: Path) -> Report:
     """Compare archives from the same build; no unpacking, imports or execution."""
@@ -301,8 +317,21 @@ def compare(sdist: Path, wheel: Path) -> Report:
         sv = sm.get(field, [])
         wv = wm.get(field, [])
         if field in dynamic:
-            if s_version >= (2, 6) and field in MULTIPLE_USE_FIELDS and sv and wv[:len(sv)] != sv:
-                add("DYNAMIC_BASELINE_CHANGED", "error", f"Dynamic multivalued field {field!r} must preserve source values in place, with new entries appended", field)
+            if s_version >= (2, 6) and sv:
+                if field in MULTIPLE_USE_FIELDS:
+                    original, built = sv, wv
+                elif field in CSV_DYNAMIC_FIELDS:
+                    original = _dynamic_csv_items(field, sv)
+                    built = _dynamic_csv_items(field, wv)
+                else:
+                    # Ordinary single-use Dynamic fields remain free to change.
+                    continue
+                if built[:len(original)] != original:
+                    add(
+                        "DYNAMIC_BASELINE_CHANGED", "error",
+                        f"Dynamic list field {field!r} must preserve source values in place, "
+                        "with new entries appended", field
+                    )
             continue
         if sv != wv:
             add("FIELD_MISMATCH", "error", f"Non-dynamic field {field!r} differs: sdist={sv!r}; wheel={wv!r}", field)
