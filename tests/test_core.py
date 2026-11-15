@@ -315,10 +315,12 @@ class CheckTests(unittest.TestCase):
             compare(s, w)
 
     def test_wheel_build_tag_must_begin_with_digit(self):
-        sdist, wheel = make_pair(self.base)
-        wheel = wheel.rename(self.base / "sample_pkg-1.0-alpha-py3-none-any.whl")
-        with self.assertRaisesRegex(ArtifactError, "build tag must start with a digit"):
-            compare(sdist, wheel)
+        for invalid_tag in ("alpha", "١vendor"):
+            with self.subTest(invalid_tag=invalid_tag):
+                sdist, wheel = make_pair(self.base)
+                wheel = wheel.rename(self.base / f"sample_pkg-1.0-{invalid_tag}-py3-none-any.whl")
+                with self.assertRaisesRegex(ArtifactError, "build tag must start with a digit"):
+                    compare(sdist, wheel)
 
     def test_wheel_build_tag_with_numeric_prefix_accepted(self):
         sdist, wheel = make_pair(self.base)
