@@ -1,0 +1,71 @@
+name: Non-publishing release preflight
+
+# No tags, Releases, PyPI, Marketplace uploads or privileged credentials.
+# Every run is a maintainer CI check, NOT independent usage/adoption.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-preflight.yml'
+      - 'scripts/release_preflight.py'
+      - 'src/**'
+      - 'pyproject.toml'
+  pull_request:
+    paths:
+      - '.github/workflows/release-preflight.yml'
+      - 'scripts/release_preflight.py'
+      - 'src/**'
+      - 'pyproject.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Build source distribution then wheel from that sdist
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade build
+          python -m build --outdir candidate-dist
+      - name: Check parity and record exact local artifact digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python scripts/release_preflight.py --dist-dir candidate-dist --output candidate-receipt.json
+      - name: Install candidate wheel in a fresh environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv .candidate-smoke
+          .candidate-smoke/bin/python -m pip install --no-deps candidate-dist/*.whl
+          .candidate-smoke/bin/python - <<'PY'
+          from importlib.metadata import version
+          import dist_parity
+          assert version("dist-parity") == dist_parity.__version__
+          print("Candidate wheel imported successfully in a fresh venv")
+          PY
+          .candidate-smoke/bin/python -m dist_parity --help > /dev/null
+          .candidate-smoke/bin/python -m dist_parity --dist-dir candidate-dist --json > /dev/null
+      - name: Record evidence boundary in run summary
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          result = json.loads(Path("candidate-receipt.json").read_text(encoding="utf-8"))
+          assert result["status"] == "pass", result
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
+              out.write("### Non-publishing source checkout preflight\n")
+              out.write("Maintainer-run verification only. Does not create a release or demonstrate outside adoption.\n\n")
+              out.write("This candidate can have the same version string as a previously published release but different bytes. **Never substitute these bytes for historical release assets.**\n\n")
+              for label, item in result["artifacts"].items():
+                  out.write(f"- {label}: {item['filename']} | SHA-256 {item['sha256']} | {item['size_bytes']} bytes\\n")
+          PY

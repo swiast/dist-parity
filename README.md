@@ -152,6 +152,14 @@ example 1.2.0: FAIL
 - This is **not** a vulnerability scanner, proof of package integrity, installer, or replacement for `twine check`, `check-wheel-contents`, build/test workflows, and publisher attestations.
 - Initial MVP supports one wheel at a time and does not infer whether two supplied artifacts actually originated from the same build.
 
+## Non-publishing release candidate check
+
+Maintainers can run the [release candidate preflight](docs/RELEASE_CANDIDATE.md)
+to build and inspect candidate wheel/sdist artifacts, record local SHA-256
+evidence and smoke-install the wheel without creating a release. This workflow
+uses the current source checkout (not the published `v0.1.2` wheel) and does
+**not** constitute public publication or independent adoption.
+
 ## Development
 
 ```bash
