@@ -41,6 +41,7 @@ def run() -> None:
         make_pair(passing)
         success_code, good = cli_json(["--json", "--dist-dir", str(passing)])
         assert success_code == 0 and good["ok"] is True, good
+        assert any(f["severity"] == "info" and f["code"] == "PARITY_OK" for f in good["findings"]), good
 
         failing = root / "failing"
         failing.mkdir()
