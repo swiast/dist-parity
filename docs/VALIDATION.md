@@ -66,6 +66,10 @@ Core Metadata 2.1+ permits Description in the message body instead of in the ema
 
 The checker also reads the mandatory `.dist-info/WHEEL` file with the existing 2 MB metadata byte limit and checks for exactly one `Wheel-Version` header in ASCII `major.minor` format. It rejects malformed or unsupported major formats, while accepting later 1.x minor formats without asserting installation compatibility. This narrow structure check follows the [wheel binary distribution format](https://packaging.python.org/en/latest/specifications/binary-distribution-format/); it does **not** validate wheel compatibility tags, every installation scheme key, or the integrity of `RECORD` hashes. This current-main feature is **not** in the historical `v0.1.2` release.
 
+## Unreleased current-main wheel script scheme check
+
+The wheel specification restricts `.data/scripts/` to regular files. Current source rejects script symlinks, subdirectories and directory-mode files; an explicit scheme directory and direct regular script files remain valid. Other `.data/` schemes are not comprehensively validated, and this check does not execute or install scripts. Reference: [wheel distribution format](https://packaging.python.org/en/latest/specifications/binary-distribution-format/#file-contents).
+
 ## Known limits
 - Single sdist / wheel pair at a time, no proof of build provenance, and no malicious-code detection.
 - Does not validate every Core Metadata field's semantic syntax.
