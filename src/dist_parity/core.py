@@ -190,15 +190,21 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
             if len(meta) != 1:
                 raise ArtifactError(f"wheel must contain exactly one .dist-info/METADATA (found {len(meta)})")
             base = meta[0].rsplit("/", 1)[0]
+            # Wheel metadata is three required regular files, not merely
+            # archive entries with the correct names. A directory or Unix
+            # symlink at any of these paths must not satisfy the requirement.
+            for required in ("METADATA", "WHEEL", "RECORD"):
+                member_name = f"{base}/{required}"
+                if member_name not in names:
+                    raise ArtifactError(f"wheel missing {member_name}")
+                member = archive.getinfo(member_name)
+                mode = (member.external_attr >> 16) & 0o170000
+                if mode == 0o120000:
+                    raise ArtifactError(f"wheel: {required} must not be a symlink")
+                if member.is_dir() or mode not in (0, 0o100000):
+                    raise ArtifactError(f"wheel: {required} must be a regular file")
             info = archive.getinfo(meta[0])
-            # Symlinks masquerading as METADATA should not be accepted as regular files.
-            mode = (info.external_attr >> 16) & 0o170000
-            if mode == 0o120000:
-                raise ArtifactError("wheel: METADATA must not be a symlink")
-            for required in ("WHEEL", "RECORD"):
-                if f"{base}/{required}" not in names:
-                    raise ArtifactError(f"wheel missing {base}/{required}")
-            if archive.getinfo(meta[0]).file_size > MAX_METADATA_BYTES:
+            if info.file_size > MAX_METADATA_BYTES:
                 raise ArtifactError("wheel: METADATA exceeds metadata size limit")
             # Bound decompression even if the ZIP header has misleading sizes.
             with archive.open(info) as stream:
@@ -210,6 +216,10 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
             wheel_parts = path.name[:-4].split("-")
             if len(wheel_parts) not in (5, 6) or not all(wheel_parts):
                 raise ArtifactError("wheel filename: expected distribution-version[-build]-python-abi-platform.whl")
+            # The optional wheel build tag is required to begin with a digit
+            # by the wheel filename specification (PEP 427).
+            if len(wheel_parts) == 6 and not wheel_parts[2][0].isdigit():
+                raise ArtifactError("wheel filename: build tag must start with a digit")
             wheel_name, wheel_version = wheel_parts[:2]
             dist_info_name, dist_info_version = _identity_from_stem(
                 base.removesuffix(".dist-info"), "wheel dist-info directory"
