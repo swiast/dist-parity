@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Compare static long-description content from the Core Metadata `Description` header or message body (2.1+ representation), while permitting declared Dynamic changes; normalize CRLF/folded header representation, reject ambiguous simultaneous forms, and redact description content in mismatch diagnostics (length + SHA-256). Seven synthetic tests.
 - Expose optional `format: json` in the *unreleased* composite Action while preserving the default text output and valid JSON for incomplete explicit pairs; add four Bash-script regression tests plus GitHub integration coverage.
 - Enforce the Core Metadata 2.6 / PEP 808 append-only baseline for comma-separated Dynamic `Keywords`, `Author-Email` and `Maintainer-Email` lists (using RFC 822-aware address parsing for quoted names), with seven synthetic tests; 2.2–2.5 behavior remains unchanged.
 - Require the three mandatory wheel `.dist-info` metadata entries to be regular files rather than symlink or directory entries; reject malformed optional wheel build tags that do not start with a digit.
