@@ -193,6 +193,11 @@ evidence and smoke-install the wheel without creating a release. This workflow
 uses the current source checkout (not the published `v0.1.2` wheel) and does
 **not** constitute public publication or independent adoption.
 
+The current-source PEP 440 identity heuristic is tested against a pinned
+Python Packaging reference in the optional [PEP 440 oracle CI](docs/PEP440_ORACLE.md):
+this guards against **false mismatch** judgments for equivalent version
+spellings without adding a runtime dependency or claiming complete PEP 440 support.
+
 ## Development
 
 ```bash
