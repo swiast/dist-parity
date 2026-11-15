@@ -2,6 +2,7 @@
 
 ## Unreleased (main)
 
+- Reject symlinks, nested members and non-regular file modes inside the wheel `.data/scripts/` installation scheme while accepting a standard directory entry and flat script files. Six maintainer-authored regression methods; no archive extraction or release publication.
 - Validate the bounded UTF-8 `WHEEL` metadata file's mandatory single `Wheel-Version` header with ASCII major.minor syntax; fail closed on missing/duplicate/malformed or unsupported major versions, while retaining best-effort 1.x future minors. Seven synthetic regression methods, including CLI JSON exit 2. Still not a wheel installer or complete wheel validator.
 - Require any top-level wheel `.data/` installation root to match the selected `.dist-info/` distribution/version stem, rejecting stray/multiple scheme roots while permitting legitimate nested directories and ordinary files. Five synthetic regression tests.
 - Add an isolated Python Packaging 26.3 PEP 440 oracle CI check (Python 3.11/3.14) over 123 valid version spellings and 15,129 ordered pairs; verify no equivalent spelling is marked as an obvious conflict, test symmetry, and count deliberate deferrals. Runtime remains dependency-free; no release publication.

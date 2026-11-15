@@ -374,6 +374,27 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
             }
             if data_roots - {expected_data_root}:
                 raise ArtifactError("wheel .data directory identity differs from .dist-info")
+            # A wheel's .data/scripts/ installation scheme may contain only
+            # regular files (including executable files, but not symlinks or
+            # nested directories). The scheme's own explicit directory entry
+            # is valid; ordinary files elsewhere in the wheel are unaffected.
+            scripts_root = f"{expected_data_root}/scripts"
+            for member in archive.infolist():
+                entry = member.filename
+                mode = (member.external_attr >> 16) & 0o170000
+                if entry == scripts_root:
+                    raise ArtifactError("wheel .data/scripts must be a directory")
+                if entry == f"{scripts_root}/":
+                    if not member.is_dir() or mode not in (0, 0o040000):
+                        raise ArtifactError("wheel .data/scripts must be a directory")
+                    continue
+                if entry.startswith(f"{scripts_root}/"):
+                    relative = entry[len(scripts_root) + 1:]
+                    if (not relative or "/" in relative or member.is_dir()
+                            or mode not in (0, 0o100000)):
+                        raise ArtifactError(
+                            "wheel .data/scripts must contain only regular files"
+                        )
             # Wheel metadata is three required regular files, not merely
             # archive entries with the correct names. A directory or Unix
             # symlink at any of these paths must not satisfy the requirement.
