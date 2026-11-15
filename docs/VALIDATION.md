@@ -62,8 +62,11 @@ For an automated release job, use the [README GitHub Actions example](../README.
 
 Core Metadata 2.1+ permits Description in the message body instead of in the email headers. The unreleased `main` checker now treats either representation as the same logical metadata field for PEP 643 parity, including `Dynamic: Description` exceptions. It detects changed static descriptions while avoiding raw long-description text in diagnostics (length and SHA-256 only). It normalizes CRLF/LF and the specified folded header representation; it does not render, validate, or sanitize reStructuredText/Markdown. This behavior is **not included** in the published `v0.1.2` release. Source: https://packaging.python.org/en/latest/specifications/core-metadata/#description.
 
-## Known limits
+## Unreleased current-main WHEEL header check
 
+The checker also reads the mandatory `.dist-info/WHEEL` file with the existing 2 MB metadata byte limit and checks for exactly one `Wheel-Version` header in ASCII `major.minor` format. It rejects malformed or unsupported major formats, while accepting later 1.x minor formats without asserting installation compatibility. This narrow structure check follows the [wheel binary distribution format](https://packaging.python.org/en/latest/specifications/binary-distribution-format/); it does **not** validate wheel compatibility tags, every installation scheme key, or the integrity of `RECORD` hashes. This current-main feature is **not** in the historical `v0.1.2` release.
+
+## Known limits
 - Single sdist / wheel pair at a time, no proof of build provenance, and no malicious-code detection.
 - Does not validate every Core Metadata field's semantic syntax.
 - Wheel `METADATA` from a separately obtained wheel may legitimately differ if the wheel has been repaired after its initial build; compare only a wheel built from the supplied sdist.
