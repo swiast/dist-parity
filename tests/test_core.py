@@ -574,6 +574,65 @@ class CheckTests(unittest.TestCase):
         with self.assertRaisesRegex(ArtifactError, "pyproject"):
             compare(s, w)
 
+    def test_sdist_rejects_file_directory_aliases(self):
+        for path in ("sample_pkg-1.0/PKG-INFO/", "sample_pkg-1.0/pyproject.toml/"):
+            with self.subTest(path=path):
+                sdist, wheel = make_pair(self.base)
+                with tarfile.open(sdist, "r:gz") as src:
+                    members = [(m, src.extractfile(m).read() if m.isfile() else None)
+                               for m in src.getmembers()]
+                with tarfile.open(sdist, "w:gz") as out:
+                    for member, content in members:
+                        out.addfile(member, io.BytesIO(content) if content is not None else None)
+                    alias = tarfile.TarInfo(path)
+                    alias.type = tarfile.DIRTYPE
+                    out.addfile(alias)
+                with self.assertRaisesRegex(ArtifactError, "colliding file/directory"):
+                    compare(sdist, wheel)
+
+    def test_wheel_rejects_file_directory_aliases(self):
+        for path in ("sample_pkg-1.0.dist-info/METADATA/", "sample_pkg-1.0.dist-info/RECORD/"):
+            with self.subTest(path=path):
+                sdist, wheel = make_pair(self.base)
+                with zipfile.ZipFile(wheel, "a") as out:
+                    out.writestr(path, b"")
+                with self.assertRaisesRegex(ArtifactError, "colliding file/directory"):
+                    compare(sdist, wheel)
+
+    def test_repeated_trailing_archive_separators_are_unsafe(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel, "a") as out:
+            out.writestr("sample_pkg/strange//", b"")
+        with self.assertRaisesRegex(ArtifactError, "unsafe entry path"):
+            compare(sdist, wheel)
+        sdist, wheel = make_pair(self.base)
+        with tarfile.open(sdist, "r:gz") as src:
+            members = [(m, src.extractfile(m).read() if m.isfile() else None)
+                       for m in src.getmembers()]
+        with tarfile.open(sdist, "w:gz") as out:
+            for member, content in members:
+                out.addfile(member, io.BytesIO(content) if content is not None else None)
+            entry = tarfile.TarInfo("sample_pkg-1.0/strange//")
+            entry.type = tarfile.DIRTYPE
+            out.addfile(entry)
+        with self.assertRaisesRegex(ArtifactError, "unsafe entry path"):
+            compare(sdist, wheel)
+
+    def test_normal_single_slash_directory_entries_remain_valid(self):
+        sdist, wheel = make_pair(self.base)
+        with tarfile.open(sdist, "r:gz") as src:
+            members = [(m, src.extractfile(m).read() if m.isfile() else None)
+                       for m in src.getmembers()]
+        with tarfile.open(sdist, "w:gz") as out:
+            for member, content in members:
+                out.addfile(member, io.BytesIO(content) if content is not None else None)
+            folder = tarfile.TarInfo("sample_pkg-1.0/license-dir/")
+            folder.type = tarfile.DIRTYPE
+            out.addfile(folder)
+        with zipfile.ZipFile(wheel, "a") as out:
+            out.writestr("sample_pkg/optional/", b"")
+        self.assertTrue(compare(sdist, wheel).ok)
+
     def test_duplicate_sdist_archive_entries(self):
         s, w = make_pair(self.base)
         # A duplicate root metadata member creates ambiguous tarfile lookup behavior.
