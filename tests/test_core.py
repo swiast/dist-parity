@@ -538,6 +538,46 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(status, 2)
         self.assertIn("could not read sdist", json.loads(output.getvalue())["error"])
 
+    def _make_unsupported_compression_wheel(self):
+        sdist, wheel = make_pair(self.base)
+        data = bytearray(wheel.read_bytes())
+        # Patch only the synthetic wheel's first METADATA member; both ZIP
+        # headers must agree for zipfile to reach the unsupported method.
+        local = data.index(b"PK\\x03\\x04")
+        central = data.index(b"PK\\x01\\x02")
+        self.assertEqual(struct.unpack_from("<H", data, local + 8)[0], 0)
+        self.assertEqual(struct.unpack_from("<H", data, central + 10)[0], 0)
+        struct.pack_into("<H", data, local + 8, 99)
+        struct.pack_into("<H", data, central + 10, 99)
+        wheel.write_bytes(data)
+        return sdist, wheel
+
+    def test_unsupported_wheel_compression_is_structured_input_error(self):
+        sdist, wheel = self._make_unsupported_compression_wheel()
+        with self.assertRaisesRegex(ArtifactError, "could not read wheel"):
+            compare(sdist, wheel)
+
+    def test_unsupported_wheel_compression_cli_json_exits_two(self):
+        sdist, wheel = self._make_unsupported_compression_wheel()
+        output, errors = io.StringIO(), io.StringIO()
+        with redirect_stdout(output), redirect_stderr(errors):
+            code = main(["--sdist", str(sdist), "--wheel", str(wheel), "--json"])
+        self.assertEqual(code, 2)
+        self.assertEqual(errors.getvalue(), "")
+        payload = json.loads(output.getvalue())
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["findings"], [])
+        self.assertIn("could not read wheel", payload["error"])
+
+    def test_supported_zip_deflate_metadata_still_passes(self):
+        sdist, wheel = make_pair(self.base)
+        with zipfile.ZipFile(wheel) as original:
+            entries = [(item, original.read(item)) for item in original.infolist()]
+        with zipfile.ZipFile(wheel, "w", compression=zipfile.ZIP_DEFLATED) as out:
+            for item, data in entries:
+                out.writestr(item.filename, data)
+        self.assertTrue(compare(sdist, wheel).ok)
+
     def test_wheel_metadata_read_is_bounded_stream(self):
         s, w = make_pair(self.base)
         # Regressions to unbounded ZipFile.read should be rejected by this test.
