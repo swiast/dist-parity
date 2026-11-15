@@ -311,7 +311,7 @@ def _wheel_metadata(path: Path) -> dict[str, list[str]]:
             if _obvious_version_conflict(dist_info_version, version):
                 raise ArtifactError("wheel dist-info directory distribution version differs from METADATA Version")
             return metadata
-    except (OSError, zipfile.BadZipFile, RuntimeError, EOFError, zlib.error) as exc:
+    except (OSError, zipfile.BadZipFile, RuntimeError, EOFError, zlib.error, NotImplementedError) as exc:
         raise ArtifactError(f"could not read wheel {path}: {exc}") from exc
 
 
