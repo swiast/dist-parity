@@ -17,7 +17,7 @@ dist-parity --dist-dir .dist-parity-check --json
 
 Run from your **project root** and start with an **empty**
 `.dist-parity-check` output directory. The package is installed from the
-versioned GitHub release asset, not from PyPI. The [v0.1.2 release CI](https://github.com/swiast/dist-parity/actions/runs/43525912471) verified published hashes. The [tagged release-smoke workflow](../.github/workflows/release-smoke.yml) tests installation on Python 3.11, 3.12 and 3.13; check the actual run before claiming it passed.
+versioned GitHub release asset, not from PyPI. The [v0.1.2 release CI](https://github.com/swiast/dist-parity/actions/runs/43525912471) verified published hashes. The [tagged release smoke run](https://github.com/swiast/dist-parity/actions/runs/43642940295) verified installation of the published wheel on Python 3.11 through 3.14 and tested the published v0.1.2 GitHub Action.
 
 A checker exit code of `0` means all checked fields matched; `1`
 identifies a metadata discrepancy that requires investigation; and `2`
