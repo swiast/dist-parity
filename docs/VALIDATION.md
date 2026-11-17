@@ -15,13 +15,15 @@ This note records **maintainer-performed checks**, not independent adoption or a
 
 The same published `packaging==25.0` source distribution yields different metadata when built with different supported versions of its declared Flit backend (`flit_core >=3.3`):
 
-| Build artifact | Metadata version | `Import-Name` | Parity |
-| --- | --- | --- | --- |
-| sdist `PKG-INFO` | 2.4 | absent | — |
-| wheel rebuilt using `flit_core==3.12.0` | 2.4 | absent | PASS |
-| wheel rebuilt using `flit_core==4.2.0` | 2.5 | `packaging` | MISMATCH |
+| Build artifact | Metadata version | `Dynamic` | `Import-Name` | Parity |
+| --- | --- | --- | --- | --- |
+| sdist `PKG-INFO` | 2.4 | absent | absent | — |
+| wheel rebuilt using `flit_core==3.12.0` | 2.4 | absent | absent | PASS |
+| wheel rebuilt using `flit_core==4.2.0` | 2.5 | absent | `packaging` | MISMATCH |
 
-[CI run with both pinned builds and full logs](https://github.com/swiast/dist-parity/actions/runs/43434676911). The [integration workflow](../.github/workflows/integration.yml) now **asserts** the historical build exits 0, the newer backend build exits 1 with exactly one `FIELD_MISMATCH` for `import-name`, and the expected 2.4→2.5 metadata-version change. Prior runs merely printed these outcomes; after the new workflow passes, its logs provide a regression-gated result. This demonstrates that metadata consistency diagnostics can change when a build backend is upgraded, without changing the source archive. It **does not** establish a bug in `packaging` or Flit. The open question is whether PEP 643's rule applies to fields introduced only after the sdist's metadata version; see [issue #1](https://github.com/swiast/dist-parity/issues/1).
+The [integration workflow](../.github/workflows/integration.yml) asserted exit 0 for the Flit 3.12.0 build, exit 1 with exactly one `FIELD_MISMATCH` for `import-name` for the Flit 4.2.0 build, and the 2.4→2.5 metadata version change. [Successful integration run 43483660060](https://github.com/swiast/dist-parity/actions/runs/43483660060).
+
+[PEP 643 and the Core Metadata specification](https://packaging.python.org/en/latest/specifications/core-metadata/#dynamic-multiple-use) require a field omitted from the sdist and absent from its `Dynamic` declarations to also be absent from a wheel built from that sdist. [PEP 794](https://peps.python.org/pep-0794/#specification) introduced `Import-Name` in Core Metadata 2.5 and calls for consistency across a release's artifacts. These provisions support the checker's current strict comparison. [Issue #1](https://github.com/swiast/dist-parity/issues/1) tracks whether this rule applies when the wheel adds a field introduced after the sdist's metadata version. The pinned builds establish the observed difference. A conclusion about upstream conformance depends on that cross-version interpretation.
 
 **Upstream discussion status (2026-11-13):** [pypa/flit#845](https://github.com/pypa/flit/issues/845) was **closed**. A Flit maintainer explained that building a wheel from an sdist generates metadata anew rather than reading the sdist's `PKG-INFO`. That explains how a backend-version-dependent metadata difference can arise; it is **not** an endorsement, independent use, or a determination that this checker is compliant or that Flit is defective. The maintainer also identified the project's [no-LLM contribution policy](https://github.com/pypa/flit/blob/main/doc/development.rst). Our externally submitted text was AI-assisted and had not been screened against that policy. We will not submit further AI-generated issues, comments or PRs to Flit. The cross-version standards interpretation remains unresolved; the checker behavior is unchanged until supported by authoritative guidance.
 
@@ -36,7 +38,9 @@ python examples/reproduce_flit_case.py --self-test
 python3.13 examples/reproduce_flit_case.py --execute
 ```
 
-The first two commands have **no network access or third-party build execution**; the offline synthetic self-test checks the metadata parser and the SHA-256 tamper-detection guard. The last command intentionally downloads and runs third-party build backend code. It verifies the published [PyPI packaging source](https://pypi.org/project/packaging/25.0/), [Flit 3.12.0](https://pypi.org/project/flit-core/3.12.0/), [Flit 4.2.0](https://pypi.org/project/flit-core/4.2.0/) and [wheel 0.48.0](https://pypi.org/project/wheel/0.48.0/) SHA-256 hashes **before installation or building**, and prints a local evidence receipt. Hash checking does not make downloaded third-party code safe. The networked path has **not** been run by this maintainer session; the historical [pinned integration CI](https://github.com/swiast/dist-parity/actions/runs/43483660060) is separate evidence. The separate [hash-pinned reproducer workflow](../.github/workflows/flit-reproducer.yml) explicitly runs `--execute` on an ephemeral Python 3.13 GitHub Actions runner when its workflow/script changes (or on manual dispatch). **Check actual workflow results** before claiming the complete networked path was successful; a workflow file alone is not test evidence.
+The first two commands run offline. The synthetic self-test checks the metadata parser and the SHA-256 tamper-detection guard. The last command downloads the published [`packaging` sdist](https://pypi.org/project/packaging/25.0/) and wheels for [Flit 3.12.0](https://pypi.org/project/flit-core/3.12.0/), [Flit 4.2.0](https://pypi.org/project/flit-core/4.2.0/) and [wheel 0.48.0](https://pypi.org/project/wheel/0.48.0/). It verifies all four pinned SHA-256 hashes before installation or building, runs the backends, and prints the metadata headers.
+
+The [hash-pinned reproducer workflow](../.github/workflows/flit-reproducer.yml) ran `--execute` successfully on Python 3.13 in both [PR run 43613863780](https://github.com/swiast/dist-parity/actions/runs/43613863780) and [post-merge main run 43613972158](https://github.com/swiast/dist-parity/actions/runs/43613972158/job/132504876116). The main job log confirms the four hashes passed and records the headers for all three artifacts in the table above.
 
 This test helper is not part of the released `v0.1.2` tag. It is only on unreleased main, and none of this self-authored validation is independent adoption.
 ## Scope: a narrow extra check
