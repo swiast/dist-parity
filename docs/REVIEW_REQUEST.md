@@ -6,7 +6,11 @@ Repository: https://github.com/swiast/dist-parity
 
 ## First-time evaluation
 
+Start with the [maintenance evidence and reviewer entry point](MAINTENANCE_EVIDENCE.md). It separates the published v0.1.2 release from a fixed newer source commit, links the exact validation runs, and explains what remains unverified.
+
 A [short end-to-end test guide](TRY_IT.md) explains how to install the pinned GitHub-released wheel directly without PyPI, build a package from its own sdist, and submit a short review through our [feedback form](https://github.com/swiast/dist-parity/issues/new?template=feedback.yml). Documentation-only and negative reviews are equally welcome. This is a request for genuine feedback, not stars or endorsements.
+
+The released v0.1.2 does not include later source-only behavior. Record the release tag or exact Git SHA you evaluate; do not infer current-source features from the unchanged source version string.
 
 ## Fast review (no installation required)
 
@@ -21,8 +25,8 @@ If you already build both wheel and sdist for your package, use the [release and
 - Is a GitHub Action step useful as part of a release pipeline?
 - Does the `packaging==25.0` `Import-Name` observation reproduce, and what metadata versions or backend behavior explain it?
 
-Please use the [short structured feedback form](https://github.com/swiast/dist-parity/issues/new?template=feedback.yml) or open a [GitHub issue](https://github.com/swiast/dist-parity/issues/new) with the checker version, relevant metadata headers, steps to reproduce and the expected vs actual result, or submit a small PR with a synthetic regression fixture.
+Please use the [short structured feedback form](https://github.com/swiast/dist-parity/issues/new?template=feedback.yml) or open a [GitHub issue](https://github.com/swiast/dist-parity/issues/new) with the checker version or Git SHA, relevant metadata headers, steps to reproduce and the expected vs actual result, or submit a small PR with a synthetic regression fixture.
 
-Issue reports from people outside the maintainer's account will be treated as independent feedback. Self-tests, self-authored issues and CI logs will **not** be reported as third-party adoption.
+Please disclose any affiliation with this project. A different GitHub account alone does not prove independence. We distinguish documentation review, a one-time trial and an ongoing downstream integration; none is silently promoted to a stronger adoption claim. Self-tests, self-authored issues and CI logs are **not** third-party adoption.
 
 This project is unaffiliated with PyPA and OpenAI.
