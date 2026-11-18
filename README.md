@@ -14,7 +14,7 @@ Install the **published v0.1.2 wheel** directly, without cloning or a PyPI accou
 python -m pip install --no-deps "https://github.com/swiast/dist-parity/releases/download/v0.1.2/dist_parity-0.1.2-py3-none-any.whl"
 python -m pip install build
 python -m build --outdir .dist-parity-check
-dist-parity --dist-dir .dist-parity-check --json
+python -m dist_parity --dist-dir .dist-parity-check --json
 ```
 
 Run these commands in the **root of a Python project you maintain** with
