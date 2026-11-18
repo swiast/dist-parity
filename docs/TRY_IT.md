@@ -12,7 +12,7 @@ Requires Python 3.11+ and a Python project that builds sdist and wheel:
 python -m pip install --no-deps "https://github.com/swiast/dist-parity/releases/download/v0.1.2/dist_parity-0.1.2-py3-none-any.whl"
 python -m pip install build
 python -m build --outdir .dist-parity-check
-dist-parity --dist-dir .dist-parity-check --json
+python -m dist_parity --dist-dir .dist-parity-check --json
 ```
 
 Run from your **project root** and start with an **empty**
@@ -45,7 +45,9 @@ Use the [structured feedback form](https://github.com/swiast/dist-parity/issues/
 to report whether you only read the docs, ran the tool locally, tried
 the Action, or could not complete the test. Useful responses include:
 
-- What sort of Python project/build setup you tested, if sharable
+- What sort of Python project/build setup you tested, if sharable. For the
+  CLI, report `python --version` and the `Version` from
+  `python -m pip show dist-parity`. For the Action, report the tag you used.
 - Observed exit code and sanitized metadata findings
 - Whether the tool found a meaningful problem or generated a false positive
 - A link to **your own public** downstream integration, only if one exists
